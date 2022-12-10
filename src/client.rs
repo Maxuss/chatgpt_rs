@@ -108,12 +108,14 @@ impl ChatGPT {
         }
     }
 
+    /// Sends a messages and gets ChatGPT response. Note that usually it takes the AI around ~30 seconds to respond because of how the backend API is implemented.
     pub async fn send_message<S: Into<String>>(&mut self, message: S) -> crate::Result<String> {
         self.send_message_full(None, None, message)
             .await
             .map(|value| value.message.content.parts[0].to_owned())
     }
 
+    /// Sends message with parent message id and conversation id for conversations. Note that usually it takes the AI around ~30 seconds to respond because of how the backend API is implemented.
     pub async fn send_message_full<S: Into<String>>(
         &mut self,
         parent_message_id: Option<Uuid>,
