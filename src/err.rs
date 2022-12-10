@@ -7,4 +7,8 @@ pub enum Error {
     ClientError(#[from] reqwest::Error),
     #[error("Invalid configuration provided: {0}")]
     InvalidConfiguration(#[from] InvalidHeaderValue),
+    #[error("Server returned errror: {0}")]
+    BackendError(String),
+    #[error("Parsing error has occurred: {0}")]
+    ParsingError(String),
 }

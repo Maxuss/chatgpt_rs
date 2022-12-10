@@ -5,6 +5,8 @@ use reqwest::{
     Url,
 };
 
+use crate::types::{PossiblyError, SessionRefresh};
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ClientOptions {
     api_url: Url,
@@ -38,9 +40,9 @@ impl ClientOptions {
 impl Default for ClientOptions {
     fn default() -> Self {
         Self {
-            api_url: Url::from_str("https://chat.openai.com/api").unwrap(),
-            backend_api_url: Url::from_str("https://chat.openai.com/backend-api").unwrap(),
-            user_agent: format!("ChatGPT-rs/v{}", env!("CARGO_PKG_VERSION")),
+            api_url: Url::from_str("https://chat.openai.com/api/").unwrap(),
+            backend_api_url: Url::from_str("https://chat.openai.com/backend-api/").unwrap(),
+            user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36".into(),
             markdown: true,
         }
     }
@@ -71,11 +73,38 @@ impl ChatGPT {
         );
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
+            .cookie_store(true)
             .build()?;
         Ok(Self {
             client,
             options,
             access_token: token,
         })
+    }
+
+    pub async fn refresh_token(&mut self) -> crate::Result<String> {
+        let refresh: PossiblyError<SessionRefresh> = self
+            .client
+            .get(
+                self.options
+                    .api_url
+                    .join("auth/session")
+                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+            )
+            .header(
+                "Cookie",
+                format!("__Secure-next-auth.session-token={}", self.access_token),
+            )
+            .send()
+            .await?
+            .json()
+            .await?;
+        match refresh {
+            PossiblyError::Error { error } => Err(crate::err::Error::BackendError(error)),
+            PossiblyError::Fine(refresh) => {
+                self.access_token = refresh.access_token.clone();
+                Ok(refresh.access_token)
+            }
+        }
     }
 }
