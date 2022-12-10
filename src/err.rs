@@ -1,3 +1,5 @@
+use std::string::FromUtf8Error;
+
 use reqwest::header::InvalidHeaderValue;
 use thiserror::Error;
 
@@ -11,4 +13,8 @@ pub enum Error {
     BackendError(String),
     #[error("Parsing error has occurred: {0}")]
     ParsingError(String),
+    #[error("Failed to (de)serialize data: {0}")]
+    SerdeError(#[from] serde_json::Error),
+    #[error("Failed to parse string from UTF-8: {0}")]
+    StringError(#[from] FromUtf8Error),
 }
