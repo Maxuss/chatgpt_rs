@@ -142,14 +142,15 @@ impl ChatGPT {
     ///
     /// Example:
     /// ```rust
+    /// # use chatgpt::prelude::*;
     /// # use chatgpt::client::ChatGPT;
     /// # #[tokio::main]
     /// # async fn main() -> chatgpt::Result<()> {
     /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
     /// # client.refresh_token().await?;
     /// let message = "Write me a sorting algorithm in Rust.";
-    /// let response: String = client.send_message_full(None, Some(Uuid::new_v4()), message).await?;
-    /// println!("{response}");
+    /// let response: ConversationResponse = client.send_message_full(None, Some(uuid::Uuid::new_v4()), message).await?;
+    /// println!("{response:?}");
     /// # Ok(())
     /// # }
     /// ```
@@ -184,6 +185,7 @@ impl ChatGPT {
     /// ```rust
     /// # use chatgpt::types::ResponsePart;
     /// # use chatgpt::client::ChatGPT;
+    /// # use futures_util::StreamExt;
     /// # #[tokio::main]
     /// # async fn main() -> chatgpt::Result<()> {
     /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;

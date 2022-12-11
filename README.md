@@ -10,7 +10,7 @@ use chatgpt::prelude::*;
 #[tokio::main]
 async fn main() -> chatgpt::Result<()> {
     // Starting client
-    let token: String = // obtain the session token. More on session tokens later.
+    let token: String = std::env::var("SESSION_TOKEN").unwrap(); // obtain the session token. More on session tokens later.
     let mut client = ChatGPT::new(token)?;
     client.refresh_token().await?; // it is recommended to refresh token after creating a client
     
@@ -20,12 +20,14 @@ async fn main() -> chatgpt::Result<()> {
 
     // in case dynamic updates are important
     // this method allows to receive the message as a stream
-    let stream = client.send_message_streaming(None, None, "Write me an HTTP server in Rust using the Axum framework.").await?;
+    let mut stream = client.send_message_streaming(None, None, "Write me an HTTP server in Rust using the Axum framework.").await?;
     
     while let Some(part) = stream.next().await {
         // a single response part
         println!("Got response part: {part:?}");
     }
+
+    Ok(())
 }
 ```
 
