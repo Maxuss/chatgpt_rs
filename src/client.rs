@@ -104,16 +104,50 @@ impl ChatGPT {
         Ok(refresh.access_token)
     }
 
-    /// Sends a messages and gets ChatGPT response. Note that usually it takes the AI around ~30 seconds to respond because of how the backend API is implemented.
-    pub async fn send_message<S: Into<String>>(&mut self, message: S) -> crate::Result<String> {
+    /// Sends a messages and gets ChatGPT response.
+    ///
+    /// Note that usually it takes the AI around ~10-30 seconds to respond because of how the backend API is implemented.
+    /// Because of that, sometimes you might want to use [`Self::send_message_streaming()`]
+    ///
+    /// Example:
+    /// ```rust
+    /// # use chatgpt::client::ChatGPT;
+    /// # #[tokio::main]
+    /// # async fn main() -> chatgpt::Result<()> {
+    /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
+    /// # client.refresh_token().await?;
+    /// let message = "Write me a sorting algorithm in Rust.";
+    /// let response: String = client.send_message(message).await?;
+    /// println!("{response}");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn send_message<S: Into<String>>(&self, message: S) -> crate::Result<String> {
         self.send_message_full(None, None, message)
             .await
             .map(|value| value.message.content.parts[0].to_owned())
     }
 
-    /// Sends message with parent message id and conversation id for conversations. Note that usually it takes the AI around ~30 seconds to respond because of how the backend API is implemented.
+    /// Sends a message with parent message id and conversation id for conversations.
+    ///
+    /// Note that usually it takes the AI around ~10-30 seconds to respond because of how the backend API is implemented.
+    /// Because of that, sometimes you might want to use [`Self::send_message_streaming()`]
+    ///
+    /// Example:
+    /// ```rust
+    /// # use chatgpt::client::ChatGPT;
+    /// # #[tokio::main]
+    /// # async fn main() -> chatgpt::Result<()> {
+    /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
+    /// # client.refresh_token().await?;
+    /// let message = "Write me a sorting algorithm in Rust.";
+    /// let response: String = client.send_message_full(None, Some(Uuid::new_v4()), message).await?;
+    /// println!("{response}");
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn send_message_full<S: Into<String>>(
-        &mut self,
+        &self,
         parent_message_id: Option<Uuid>,
         conversation_id: Option<Uuid>,
         message: S,
@@ -137,6 +171,34 @@ impl ChatGPT {
         serde_json::from_str(&last).map_err(crate::err::Error::from)
     }
 
+    /// Sends a message with full configuration and returns a stream of gradually finishing message
+    ///
+    /// Example:
+    /// ```rust
+    /// # use chatgpt::types::ResponsePart;
+    /// # use chatgpt::client::ChatGPT;
+    /// # #[tokio::main]
+    /// # async fn main() -> chatgpt::Result<()> {
+    /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
+    /// # client.refresh_token().await?;
+    /// let message = "Write me a sorting algorithm in Rust.";
+    /// let mut stream = client.send_message_streaming(None, None, message).await?;
+    /// while let Some(message) = stream.next().await {
+    ///     match message? {
+    ///         ResponsePart::PartialData => {
+    ///             println!("Partial data received!")
+    ///         }
+    ///         ResponsePart::Processing(data) => {
+    ///             println!("Got part of data: {data:?}");
+    ///         }
+    ///         ResponsePart::Done(data) => {
+    ///             println!("Data processing finished! Response: {data:?}")
+    ///         }
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn send_message_streaming<S: Into<String>>(
         &mut self,
         parent_message_id: Option<Uuid>,
@@ -176,7 +238,7 @@ impl ChatGPT {
     }
 
     async fn acquire_response_stream(
-        &mut self,
+        &self,
         parent_message_id: Option<Uuid>,
         conversation_id: Option<Uuid>,
         message: String,
