@@ -61,6 +61,8 @@ async fn main() -> chatgpt::Result<()> {
 }
 ```
 
+Since conversations only hold little data (conversation ID and latest message ID), you can have multiple conversations at the same time!
+
 ## Session Tokens
 Session tokens allow access to the OpenAI API. You can find them in the Cookie storage of your browser.
 
@@ -89,5 +91,5 @@ Do this on the [ChatGPT website](https://chat.openai.com/chat)
 - [x] Refreshing tokens
 - [x] Sending message and receiving response
 - [x] Receiving response as a stream
-- [ ] Scoped conversations
-- [ ] Multiple conversations at the same time
+- [x] Scoped conversations
+- [x] Multiple conversations at the same time

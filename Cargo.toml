@@ -1,6 +1,6 @@
 [package]
 name = "chatgpt_rs"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 description = "ChatGPT API Wrapper"
 authors = ["Maxuss <maxus.info.mail@proton.me>"]
