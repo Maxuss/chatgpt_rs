@@ -15,6 +15,7 @@ pub struct SessionRefresh {
     pub access_token: String,
 }
 
+/// A container for User when returned from the session refresh
 #[derive(Debug, Clone, Deserialize)]
 pub struct User {
     /// Unique ID of this user
@@ -31,14 +32,6 @@ pub struct User {
     pub groups: Vec<String>,
     /// Special OpenAI features this user has
     pub features: Vec<String>,
-}
-
-/// A transparent wrapper for the response types that can return an error
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-pub enum PossiblyError<T> {
-    Error { error: String },
-    Fine(T),
 }
 
 /// A response that is received on the conversation endpoint
