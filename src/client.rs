@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::converse::ChatConversation;
 use crate::types::{ConversationResponse, ResponsePart, SessionRefresh};
 use futures_util::Stream;
 use futures_util::StreamExt;
@@ -209,7 +210,7 @@ impl ChatGPT {
     /// # }
     /// ```
     pub async fn send_message_streaming<S: Into<String>>(
-        &mut self,
+        &self,
         parent_message_id: Option<Uuid>,
         conversation_id: Option<Uuid>,
         message: S,
@@ -244,6 +245,14 @@ impl ChatGPT {
                 }
             }
         }))
+    }
+
+    /// Begins a new scoped conversation
+    pub fn new_conversation(&self) -> ChatConversation {
+        ChatConversation {
+            conversation_id: None,
+            parent_message_id: None,
+        }
     }
 
     async fn acquire_response_stream(

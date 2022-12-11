@@ -21,4 +21,7 @@ pub enum Error {
     /// An error has occurred when parsing a string from UTF-8 bytes
     #[error("Failed to parse string from UTF-8: {0}")]
     StringError(#[from] FromUtf8Error),
+    /// A backend related error has occurred
+    #[error("An error occurred while processing request: {0}")]
+    BackendError(String),
 }
