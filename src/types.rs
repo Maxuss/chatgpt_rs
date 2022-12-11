@@ -96,8 +96,6 @@ pub struct MessageContent {
 /// Part of a mapped response returned from the [`ChatGPT::send_message_streaming()`](`chatgpt::client::ChatGPT::send_message_streaming()`) method
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ResponsePart {
-    /// The data recieved eneded abruptly, needs another part of data to build a chunk of response
-    PartialData,
     /// Got a chunk of response containing unfinished message response
     Processing(ConversationResponse),
     /// Got an indication that the final response was returned

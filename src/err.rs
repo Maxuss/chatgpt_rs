@@ -1,5 +1,6 @@
 use std::string::FromUtf8Error;
 
+use eventsource_stream::EventStreamError;
 use reqwest::header::InvalidHeaderValue;
 use thiserror::Error;
 
@@ -24,4 +25,7 @@ pub enum Error {
     /// A backend related error has occurred
     #[error("An error occurred while processing request: {0}")]
     BackendError(String),
+    /// An error has occurred when processing events over stream
+    #[error("An error occurred while iterating over stream: {0}")]
+    StreamError(#[from] EventStreamError<reqwest::Error>),
 }

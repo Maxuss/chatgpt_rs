@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::converse::ChatConversation;
 use crate::types::{ConversationResponse, ResponsePart, SessionRefresh};
+use eventsource_stream::{EventStream, Eventsource};
 use futures_util::Stream;
 use futures_util::StreamExt;
 use reqwest::{
@@ -167,12 +168,9 @@ impl ChatGPT {
         let mut last: String = "null".to_owned();
 
         while let Some(chunk) = stream.next().await {
-            let chunk = String::from_utf8(chunk?.to_vec())?.replace("data: ", "");
-            let chunk = chunk.trim().to_owned();
+            let chunk = chunk?.data;
             if chunk == "[DONE]" {
                 break;
-            } else if !chunk.starts_with('{') {
-                last += &chunk;
             } else {
                 last = chunk;
             }
@@ -221,28 +219,12 @@ impl ChatGPT {
 
         let mut collector: String = String::with_capacity(256);
         Ok(stream.map(move |part| {
-            let bytes: bytes::Bytes = part?;
-            let chunk = String::from_utf8(bytes.to_vec())?.replace("data: ", "");
-            let chunk = chunk.trim().to_owned();
+            let chunk = part?.data;
             if chunk == "[DONE]" {
                 crate::Result::Ok(ResponsePart::Done(serde_json::from_str(&collector)?))
-            } else if !chunk.starts_with('{') {
-                collector += &chunk;
-                crate::Result::Ok(ResponsePart::PartialData)
             } else {
-                match serde_json::from_str(&chunk) {
-                    Ok(value) => {
-                        collector = chunk;
-                        crate::Result::Ok(ResponsePart::Processing(value))
-                    }
-                    Err(_) => {
-                        collector += &chunk;
-                        match serde_json::from_str(&collector) {
-                            Ok(new_data) => crate::Result::Ok(ResponsePart::Processing(new_data)),
-                            Err(_) => crate::Result::Ok(ResponsePart::PartialData),
-                        }
-                    }
-                }
+                collector = chunk;
+                crate::Result::Ok(ResponsePart::Processing(serde_json::from_str(&collector)?))
             }
         }))
     }
@@ -260,7 +242,7 @@ impl ChatGPT {
         parent_message_id: Option<Uuid>,
         conversation_id: Option<Uuid>,
         message: String,
-    ) -> crate::Result<impl Stream<Item = reqwest::Result<bytes::Bytes>>> {
+    ) -> crate::Result<EventStream<impl Stream<Item = reqwest::Result<bytes::Bytes>>>> {
         let mut body = json!({
             "action": "next",
             "messages": [
@@ -298,6 +280,7 @@ impl ChatGPT {
             .json(&body)
             .send()
             .await?
-            .bytes_stream())
+            .bytes_stream()
+            .eventsource())
     }
 }
