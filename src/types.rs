@@ -18,7 +18,7 @@ pub struct SessionRefresh {
 #[derive(Debug, Clone, Deserialize)]
 pub struct User {
     /// Unique ID of this user
-    pub id: Uuid,
+    pub id: String,
     /// Username of this user
     pub name: String,
     /// Email of this user
@@ -98,4 +98,11 @@ pub struct MessageContent {
     pub content_type: MessageContentType,
     /// The text parts of this message. The AI seems to always output the message in a single element array, as well as the user
     pub parts: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum ResponsePart {
+    PartialData,
+    Processing(ConversationResponse),
+    Done(ConversationResponse),
 }

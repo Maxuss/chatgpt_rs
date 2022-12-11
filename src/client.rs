@@ -1,13 +1,14 @@
 use std::str::FromStr;
 
+use crate::types::{ConversationResponse, ResponsePart, SessionRefresh};
+use futures_util::Stream;
+use futures_util::StreamExt;
 use reqwest::{
     header::{HeaderMap, HeaderValue, USER_AGENT},
     Method, Url,
 };
 use serde_json::json;
 use uuid::Uuid;
-
-use crate::types::{ConversationResponse, PossiblyError, SessionRefresh};
 
 /// Options for the ChatGPT client
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -82,7 +83,7 @@ impl ChatGPT {
 
     /// Refresh the access token. It is recommended to run this command after creating the client
     pub async fn refresh_token(&mut self) -> crate::Result<String> {
-        let refresh: PossiblyError<SessionRefresh> = self
+        let refresh: SessionRefresh = self
             .client
             .get(
                 self.options
@@ -99,13 +100,8 @@ impl ChatGPT {
             .await?
             .json()
             .await?;
-        match refresh {
-            PossiblyError::Error { error } => Err(crate::err::Error::BackendError(error)),
-            PossiblyError::Fine(refresh) => {
-                self.access_token = refresh.access_token.clone();
-                Ok(refresh.access_token)
-            }
-        }
+        self.access_token = refresh.access_token.clone();
+        Ok(refresh.access_token)
     }
 
     /// Sends a messages and gets ChatGPT response. Note that usually it takes the AI around ~30 seconds to respond because of how the backend API is implemented.
@@ -122,6 +118,69 @@ impl ChatGPT {
         conversation_id: Option<Uuid>,
         message: S,
     ) -> crate::Result<ConversationResponse> {
+        let mut stream = self
+            .acquire_response_stream(parent_message_id, conversation_id, message.into())
+            .await?;
+        let mut last: String = "null".to_owned();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = String::from_utf8(chunk?.to_vec())?.replace("data: ", "");
+            let chunk = chunk.trim().to_owned();
+            if chunk == "[DONE]" {
+                break;
+            } else if !chunk.starts_with('{') {
+                last += &chunk;
+            } else {
+                last = chunk;
+            }
+        }
+        serde_json::from_str(&last).map_err(crate::err::Error::from)
+    }
+
+    pub async fn send_message_streaming<S: Into<String>>(
+        &mut self,
+        parent_message_id: Option<Uuid>,
+        conversation_id: Option<Uuid>,
+        message: S,
+    ) -> crate::Result<impl Stream<Item = crate::Result<ResponsePart>>> {
+        let stream = self
+            .acquire_response_stream(parent_message_id, conversation_id, message.into())
+            .await?;
+
+        let mut collector: String = String::with_capacity(256);
+        Ok(stream.map(move |part| {
+            let bytes: bytes::Bytes = part?;
+            let chunk = String::from_utf8(bytes.to_vec())?.replace("data: ", "");
+            let chunk = chunk.trim().to_owned();
+            if chunk == "[DONE]" {
+                crate::Result::Ok(ResponsePart::Done(serde_json::from_str(&collector)?))
+            } else if !chunk.starts_with('{') {
+                collector += &chunk;
+                crate::Result::Ok(ResponsePart::PartialData)
+            } else {
+                match serde_json::from_str(&chunk) {
+                    Ok(value) => {
+                        collector = chunk;
+                        crate::Result::Ok(ResponsePart::Processing(value))
+                    }
+                    Err(_) => {
+                        collector += &chunk;
+                        match serde_json::from_str(&collector) {
+                            Ok(new_data) => crate::Result::Ok(ResponsePart::Processing(new_data)),
+                            Err(_) => crate::Result::Ok(ResponsePart::PartialData),
+                        }
+                    }
+                }
+            }
+        }))
+    }
+
+    async fn acquire_response_stream(
+        &mut self,
+        parent_message_id: Option<Uuid>,
+        conversation_id: Option<Uuid>,
+        message: String,
+    ) -> crate::Result<impl Stream<Item = reqwest::Result<bytes::Bytes>>> {
         let mut body = json!({
             "action": "next",
             "messages": [
@@ -130,7 +189,7 @@ impl ChatGPT {
                     "role": "user",
                     "content": {
                         "content_type": "text",
-                        "parts": [message.into()]
+                        "parts": [message]
                     }
                 }
             ],
@@ -142,7 +201,7 @@ impl ChatGPT {
                 .unwrap()
                 .insert("conversation_id".into(), serde_json::to_value(id).unwrap());
         }
-        let mut stream = self
+        Ok(self
             .client
             .request(
                 Method::POST,
@@ -159,23 +218,6 @@ impl ChatGPT {
             .json(&body)
             .send()
             .await?
-            .bytes_stream();
-        let mut last: String = "null".to_owned();
-
-        use futures_util::StreamExt;
-        while let Some(chunk) = stream.next().await {
-            let chunk = String::from_utf8(chunk?.to_vec())?
-                .replace("data: ", "")
-                .to_owned();
-            let chunk = chunk.trim().to_owned();
-            if chunk == "[DONE]" {
-                break;
-            } else if !chunk.starts_with('{') {
-                last += &chunk;
-            } else {
-                last = chunk;
-            }
-        }
-        serde_json::from_str(&last).map_err(crate::err::Error::from)
+            .bytes_stream())
     }
 }
