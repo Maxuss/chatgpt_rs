@@ -72,7 +72,6 @@ impl ChatGPT {
         );
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
-            .cookie_store(true)
             .build()?;
         Ok(Self {
             client,
@@ -83,7 +82,7 @@ impl ChatGPT {
 
     /// Refresh the access token. It is recommended to run this command after creating the client
     pub async fn refresh_token(&mut self) -> crate::Result<String> {
-        let refresh: SessionRefresh = self
+        let refresh = self
             .client
             .get(
                 self.options
@@ -98,10 +97,18 @@ impl ChatGPT {
             )
             .send()
             .await?
-            .json()
-            .await?;
-        self.access_token = refresh.access_token.clone();
-        Ok(refresh.access_token)
+            .json::<SessionRefresh>()
+            .await;
+        match refresh {
+            Ok(refresh) => {
+                self.access_token = refresh.access_token.clone();
+                Ok(refresh.access_token)
+            }
+            Err(_) => {
+                // the previous access token is valid
+                Ok(self.access_token.clone())
+            }
+        }
     }
 
     /// Sends a messages and gets ChatGPT response.
