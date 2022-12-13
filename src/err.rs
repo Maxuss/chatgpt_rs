@@ -28,4 +28,12 @@ pub enum Error {
     /// An error has occurred when processing events over stream
     #[error("An error occurred while iterating over stream: {0}")]
     StreamError(#[from] EventStreamError<reqwest::Error>),
+    /// An error has occurred, caused by anyhow. Most likely during simple authentication
+    #[error("An anyhow error has occurred: {0}")]
+    #[cfg(feature = "simple-auth")]
+    AnyhowError(#[from] anyhow::Error),
+    /// An error has occurred while doing simple auth
+    #[error("Simple authentication failed: {0}")]
+    #[cfg(feature = "simple-auth")]
+    SimpleAuthFailed(String),
 }
