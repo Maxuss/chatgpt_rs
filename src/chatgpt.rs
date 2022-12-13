@@ -1,6 +1,8 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+/// This module contains the auth information
+pub mod auth;
 /// This module contains the ChatGPT client
 pub mod client;
 /// This module contains all the conversation logic
