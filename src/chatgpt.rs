@@ -19,20 +19,23 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 
 #[cfg(test)]
 pub mod test {
-    use crate::{client::ChatGPT, types::ResponsePart};
+    use crate::{auth::simple::simple_auth, client::ChatGPT, types::ResponsePart};
     use futures_util::StreamExt;
     #[tokio::test]
     async fn test_client() {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token).unwrap();
+        let email = std::env::var("EMAIL").unwrap();
+        let password = std::env::var("PASSWORD").unwrap();
+
+        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
         assert!(matches!(client.refresh_token().await, Ok(_)))
     }
 
     #[tokio::test]
     async fn test_message() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        // std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
+        let email = std::env::var("EMAIL").unwrap();
+        let password = std::env::var("PASSWORD").unwrap();
+
+        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
         client.refresh_token().await?;
         let response = client
             .send_message_full(None, None, "Write me a simple sorting algorithm in Rust")
@@ -43,8 +46,10 @@ pub mod test {
 
     #[tokio::test]
     async fn test_message_streaming() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
+        let email = std::env::var("EMAIL").unwrap();
+        let password = std::env::var("PASSWORD").unwrap();
+
+        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
         client.refresh_token().await?;
         let mut stream = client
             .send_message_streaming(None, None, "Write me a simple sorting algorithm in Rust")
@@ -58,8 +63,10 @@ pub mod test {
 
     #[tokio::test]
     async fn test_conversations() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
+        let email = std::env::var("EMAIL").unwrap();
+        let password = std::env::var("PASSWORD").unwrap();
+
+        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
         client.refresh_token().await?;
         let mut conversation = client.new_conversation();
         let response = conversation
@@ -75,8 +82,10 @@ pub mod test {
 
     #[tokio::test]
     async fn test_conversations_streaming() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
+        let email = std::env::var("EMAIL").unwrap();
+        let password = std::env::var("PASSWORD").unwrap();
+
+        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
         client.refresh_token().await?;
         let mut conversation = client.new_conversation();
         let response = conversation
