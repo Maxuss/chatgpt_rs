@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::auth::AuthenticationData;
 use crate::converse::ChatConversation;
 use crate::types::{ConversationResponse, ResponsePart, SessionRefresh};
 use eventsource_stream::{EventStream, Eventsource};
@@ -17,7 +18,6 @@ use uuid::Uuid;
 pub struct ClientOptions {
     api_url: Url,
     backend_api_url: Url,
-    user_agent: String,
 }
 
 impl ClientOptions {
@@ -32,12 +32,6 @@ impl ClientOptions {
         self.backend_api_url = backend_url;
         self
     }
-
-    /// Sets the user agent for the client. Note that the API seems to filter out most of user agents except for default browser ones.
-    pub fn with_user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
-        self.user_agent = user_agent.into();
-        self
-    }
 }
 
 impl Default for ClientOptions {
@@ -45,7 +39,6 @@ impl Default for ClientOptions {
         Self {
             api_url: Url::from_str("https://chat.openai.com/api/").unwrap(),
             backend_api_url: Url::from_str("https://chat.openai.com/backend-api/").unwrap(),
-            user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36".into(),
         }
     }
 }
@@ -55,22 +48,24 @@ impl Default for ClientOptions {
 pub struct ChatGPT {
     client: reqwest::Client,
     options: ClientOptions,
-    access_token: String,
+    auth: AuthenticationData,
 }
 
 impl ChatGPT {
     /// Constructs a new ChatGPT client with default client options
-    pub fn new<S: Into<String>>(token: S) -> crate::Result<Self> {
-        Self::with_options(token, ClientOptions::default())
+    pub fn new(auth_data: AuthenticationData) -> crate::Result<Self> {
+        Self::with_options(auth_data, ClientOptions::default())
     }
 
     /// Constructs a new ChatGPT client with the specified client options
-    pub fn with_options<S: Into<String>>(token: S, options: ClientOptions) -> crate::Result<Self> {
-        let token = token.into();
+    pub fn with_options(
+        auth_data: AuthenticationData,
+        options: ClientOptions,
+    ) -> crate::Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert(
             USER_AGENT,
-            HeaderValue::from_bytes(options.user_agent.as_bytes())?,
+            HeaderValue::from_bytes(auth_data.user_agent.as_bytes())?,
         );
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
@@ -78,7 +73,7 @@ impl ChatGPT {
         Ok(Self {
             client,
             options,
-            access_token: token,
+            auth: auth_data,
         })
     }
 
@@ -92,10 +87,16 @@ impl ChatGPT {
                     .join("auth/session")
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
-            .header("Authorization", format!("Bearer {}", self.access_token))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.auth.access_token),
+            )
             .header(
                 "Cookie",
-                format!("__Secure-next-auth.session-token={}", self.access_token),
+                format!(
+                    "__Secure-next-auth.session-token={}; cf_clearance={}",
+                    self.auth.access_token, self.auth.cf_token
+                ),
             )
             .send()
             .await?
@@ -103,12 +104,12 @@ impl ChatGPT {
             .await;
         match refresh {
             Ok(refresh) => {
-                self.access_token = refresh.access_token.clone();
+                self.auth.access_token = refresh.access_token.clone();
                 Ok(refresh.access_token)
             }
             Err(_) => {
                 // the previous access token is valid
-                Ok(self.access_token.clone())
+                Ok(self.auth.access_token.clone())
             }
         }
     }
@@ -272,10 +273,16 @@ impl ChatGPT {
                     .join("conversation")
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
-            .header("Authorization", format!("Bearer {}", self.access_token))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.auth.access_token),
+            )
             .header(
                 "Cookie",
-                format!("__Secure-next-auth.session-token={}", self.access_token),
+                format!(
+                    "__Secure-next-auth.session-token={}; cf_clearance={}",
+                    self.auth.access_token, self.auth.cf_token
+                ),
             )
             .json(&body)
             .send()
