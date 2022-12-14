@@ -26,7 +26,7 @@ pub mod test {
         let email = std::env::var("EMAIL").unwrap();
         let password = std::env::var("PASSWORD").unwrap();
 
-        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
+        let mut client = ChatGPT::new(simple_auth(email, password).await.unwrap()).unwrap();
         assert!(matches!(client.refresh_token().await, Ok(_)))
     }
 
@@ -35,7 +35,7 @@ pub mod test {
         let email = std::env::var("EMAIL").unwrap();
         let password = std::env::var("PASSWORD").unwrap();
 
-        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
+        let mut client = ChatGPT::new(simple_auth(email, password).await.unwrap()).unwrap();
         client.refresh_token().await?;
         let response = client
             .send_message_full(None, None, "Write me a simple sorting algorithm in Rust")
@@ -49,7 +49,7 @@ pub mod test {
         let email = std::env::var("EMAIL").unwrap();
         let password = std::env::var("PASSWORD").unwrap();
 
-        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
+        let mut client = ChatGPT::new(simple_auth(email, password).await.unwrap()).unwrap();
         client.refresh_token().await?;
         let mut stream = client
             .send_message_streaming(None, None, "Write me a simple sorting algorithm in Rust")
@@ -66,7 +66,7 @@ pub mod test {
         let email = std::env::var("EMAIL").unwrap();
         let password = std::env::var("PASSWORD").unwrap();
 
-        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
+        let mut client = ChatGPT::new(simple_auth(email, password).await.unwrap()).unwrap();
         client.refresh_token().await?;
         let mut conversation = client.new_conversation();
         let response = conversation
@@ -85,7 +85,7 @@ pub mod test {
         let email = std::env::var("EMAIL").unwrap();
         let password = std::env::var("PASSWORD").unwrap();
 
-        let mut client = ChatGPT::new(simple_auth(email, password).unwrap()).unwrap();
+        let mut client = ChatGPT::new(simple_auth(email, password).await.unwrap()).unwrap();
         client.refresh_token().await?;
         let mut conversation = client.new_conversation();
         let response = conversation
