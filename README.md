@@ -1,3 +1,6 @@
+# Regarding API changes from December 11th 2022
+OpenAI made a change to API, and now requires a cloudflare clearance token. Due to this, authentication is becoming complicated. You can view recent updates regarding authentication methods in the [#3 Pull Request](https://github.com/Maxuss/chatgpt_rs/pull/3). The master branch version (and cargo published crate) does not work because of this.
+
 # ChatGPT-rs
 
 This is a reverse-engineered wrapper for the OpenAI's ChatGPT model.
