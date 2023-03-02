@@ -1,1 +1,0 @@
-All evasion scripts taken from https://github.com/berstend/puppeteer-extra/blob/master/packages/puppeteer-extra-plugin-stealth/ under the MIT License
