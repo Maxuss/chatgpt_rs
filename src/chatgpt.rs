@@ -3,6 +3,8 @@
 
 /// This module contains the ChatGPT client
 pub mod client;
+/// Conversation related types
+pub mod converse;
 /// This module contains the errors related to the API
 pub mod err;
 /// The prelude module. Import everything from it to get the necessary elements from this library
@@ -20,8 +22,24 @@ pub mod test {
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
         let mut client = ChatGPT::new(env!("TEST_API_KEY"))?;
-        let resp = client.send_simple_message("Write me a short.").await?;
-        println!("{resp:#?}");
+        let resp = client
+            .send_simple_message("Write me a short pun about the Rust language.")
+            .await?;
+        assert!(!resp.message_choices.is_empty());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_conversation() -> crate::Result<()> {
+        let client = ChatGPT::new(env!("TEST_API_KEY"))?;
+        let mut conv = client.new_conversation_directed(
+            "You are TestGPT, an AI model developed in Rust in year 2023.",
+        );
+        let resp_a = conv.send_message("Could you tell me who you are?").await?;
+        let resp_b = conv
+            .send_message("What did I ask you about in my first question?")
+            .await?;
+        assert!(!resp_a.message_choices.is_empty() && !resp_b.message_choices.is_empty());
         Ok(())
     }
 }

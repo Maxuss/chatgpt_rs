@@ -18,9 +18,9 @@ pub struct ChatMessage {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize)]
-pub struct CompletionRequest {
-    pub model: &'static str,
-    pub messages: Vec<ChatMessage>,
+pub struct CompletionRequest<'a> {
+    pub model: &'a str,
+    pub messages: &'a Vec<ChatMessage>,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
