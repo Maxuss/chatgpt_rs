@@ -17,13 +17,13 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 
 #[cfg(test)]
 pub mod test {
-    use std::{fs::File, path::Path};
+    use std::{env, fs::File, path::Path};
 
     use crate::{client::ChatGPT, types::CompletionResponse};
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
-        let mut client = ChatGPT::new(env!("TEST_API_KEY"))?;
+        let mut client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let resp = client
             .send_simple_message("Write me a short pun about the Rust language.")
             .await?;
@@ -33,7 +33,7 @@ pub mod test {
 
     #[tokio::test]
     async fn test_conversation() -> crate::Result<()> {
-        let client = ChatGPT::new(env!("TEST_API_KEY"))?;
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let mut conv = client.new_conversation_directed(
             "You are TestGPT, an AI model developed in Rust in year 2023.",
         );
@@ -47,7 +47,7 @@ pub mod test {
 
     #[tokio::test]
     async fn test_conversation_saving() -> crate::Result<()> {
-        let client = ChatGPT::new(env!("TEST_API_KEY"))?;
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let mut conv = client.new_conversation_directed(
             "You are TestGPT, an AI model developed in Rust in year 2023.",
         );
@@ -58,7 +58,17 @@ pub mod test {
         conv.save_history_json("history.json").await?;
         let path: &Path = "history.json".as_ref();
         assert!(path.exists());
-        tokio::fs::remove_file(path).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_conversation_restoring() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.restore_conversation("history.json").await?;
+        let resp = conv
+            .send_message("Could you tell me what did I ask you about in my first question?")
+            .await?;
+        conv.save_history_json("history.json").await?;
         Ok(())
     }
 }

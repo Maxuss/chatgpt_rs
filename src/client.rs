@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -9,6 +10,8 @@ use reqwest::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
 use crate::converse::Conversation;
@@ -35,12 +38,31 @@ impl ChatGPT {
         Ok(Self { client })
     }
 
+    pub async fn restore_conversation<P: AsRef<Path>>(
+        &self,
+        file: P,
+    ) -> crate::Result<Conversation> {
+        let path = file.as_ref();
+        if !path.exists() {
+            return Err(crate::err::Error::ParsingError(
+                "Conversation history JSON file does not exist".to_string(),
+            ));
+        }
+        let mut file = File::open(path).await?;
+        let mut buf = String::new();
+        file.read_to_string(&mut buf).await?;
+        Ok(Conversation::new_with_history(
+            self.clone(),
+            serde_json::from_str(&buf)?,
+        ))
+    }
+
     pub fn new_conversation(&self) -> Conversation {
         self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now().to_string()))
     }
 
     pub fn new_conversation_directed<S: Into<String>>(&self, direction_message: S) -> Conversation {
-        Conversation::new(Arc::new(self.clone()), direction_message.into())
+        Conversation::new(self.clone(), direction_message.into())
     }
 
     #[must_use = "Sends a message to ChatGPT and uses your tokens"]

@@ -8,12 +8,12 @@ use crate::{
 };
 
 pub struct Conversation {
-    client: Arc<ChatGPT>,
+    client: ChatGPT,
     pub history: Vec<ChatMessage>,
 }
 
 impl Conversation {
-    pub fn new(client: Arc<ChatGPT>, first_message: String) -> Self {
+    pub fn new(client: ChatGPT, first_message: String) -> Self {
         Self {
             client,
             history: vec![ChatMessage {
@@ -21,6 +21,10 @@ impl Conversation {
                 content: first_message,
             }],
         }
+    }
+
+    pub fn new_with_history(client: ChatGPT, history: Vec<ChatMessage>) -> Self {
+        Self { client, history }
     }
 
     #[must_use = "Sends a message to ChatGPT and uses your tokens"]

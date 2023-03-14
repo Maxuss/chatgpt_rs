@@ -1,4 +1,4 @@
-use std::string::FromUtf8Error;
+use std::{env::VarError, string::FromUtf8Error};
 
 use reqwest::header::InvalidHeaderValue;
 use thiserror::Error;
@@ -27,4 +27,7 @@ pub enum Error {
     /// A Tokio IO error happened
     #[error("Error happened during an IO operation: {0}")]
     IOError(#[from] tokio::io::Error),
+    /// Most likely env var not provided
+    #[error("Error while trying to access an environment variable: {0}")]
+    VarError(#[from] VarError),
 }
