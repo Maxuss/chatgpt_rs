@@ -1,4 +1,6 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
+
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::{
     client::ChatGPT,
@@ -33,5 +35,15 @@ impl Conversation {
         let resp = self.client.send_history(&self.history).await?;
         self.history.push(resp.message_choices[0].message.clone());
         Ok(resp)
+    }
+
+    pub async fn save_history_json<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
+        let path = to.as_ref();
+        if path.exists() {
+            tokio::fs::remove_file(path).await?;
+        }
+        let mut file = File::create(path).await?;
+        file.write_all(&serde_json::to_vec(&self.history)?).await?;
+        Ok(())
     }
 }

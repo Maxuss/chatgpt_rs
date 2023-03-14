@@ -24,4 +24,7 @@ pub enum Error {
     /// A backend related error has occurred
     #[error("An error occurred while processing request: {0}")]
     BackendError(String),
+    /// A Tokio IO error happened
+    #[error("Error happened during an IO operation: {0}")]
+    IOError(#[from] tokio::io::Error),
 }
