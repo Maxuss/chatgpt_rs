@@ -20,7 +20,7 @@ pub struct ChatGPT {
 }
 
 impl ChatGPT {
-    /// Constructs a new ChatGPT client with default client options
+    /// Constructs a new ChatGPT API client with provided API Key
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
         let api_key = api_key.into();
         let mut headers = HeaderMap::new();
@@ -34,6 +34,8 @@ impl ChatGPT {
         Ok(Self { client })
     }
 
+    /// Restores a conversation from local conversation JSON file.
+    /// The conversation file can originally be saved using the [`Conversation::save_history_json()`].
     pub async fn restore_conversation<P: AsRef<Path>>(
         &self,
         file: P,
@@ -53,15 +55,24 @@ impl ChatGPT {
         ))
     }
 
+    /// Starts a new conversation with a default starting message.
+    ///
+    /// Conversations record message history.
     pub fn new_conversation(&self) -> Conversation {
-        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now().to_string()))
+        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now()))
     }
 
+    /// Starts a new conversation with a specified starting message.
+    ///
+    /// Conversations record message history.
     pub fn new_conversation_directed<S: Into<String>>(&self, direction_message: S) -> Conversation {
         Conversation::new(self.clone(), direction_message.into())
     }
 
-    #[must_use = "Sends a message to ChatGPT and uses your tokens"]
+    /// Explicitly sends whole message history to the API.
+    ///
+    /// In most cases, if you would like to store message history, you should be looking at the [`Conversation`] struct, and
+    /// [`Self::new_conversation()`] and [`Self::new_conversation_directed()`]
     pub async fn send_history(
         &self,
         history: &Vec<ChatMessage>,
@@ -82,7 +93,7 @@ impl ChatGPT {
             .map_err(crate::err::Error::from)
     }
 
-    #[must_use = "Sends a message to ChatGPT and uses your tokens"]
+    /// Sends a single message to the API without preserving message history.
     pub async fn send_simple_message<S: Into<String>>(
         &self,
         message: S,

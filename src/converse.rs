@@ -7,12 +7,15 @@ use crate::{
     types::{ChatMessage, CompletionResponse, Role},
 };
 
+/// Stores a single conversation session, and automatically saves message history
 pub struct Conversation {
     client: ChatGPT,
+    /// All the messages sent and received, starting with the beginning system message
     pub history: Vec<ChatMessage>,
 }
 
 impl Conversation {
+    /// Constructs a new conversation from an API client and the introductory message
     pub fn new(client: ChatGPT, first_message: String) -> Self {
         Self {
             client,
@@ -23,11 +26,14 @@ impl Conversation {
         }
     }
 
+    /// Constructs a new conversation from a pre-initialized chat history
     pub fn new_with_history(client: ChatGPT, history: Vec<ChatMessage>) -> Self {
         Self { client, history }
     }
 
-    #[must_use = "Sends a message to ChatGPT and uses your tokens"]
+    /// Sends the message to the ChatGPT API and returns the completion response.
+    ///
+    /// Execution speed depends on API response times.
     pub async fn send_message<S: Into<String>>(
         &mut self,
         message: S,
@@ -41,6 +47,7 @@ impl Conversation {
         Ok(resp)
     }
 
+    /// Saves the history to a local JSON file, that can be restored to a conversation on runtime later.
     pub async fn save_history_json<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
         let path = to.as_ref();
         if path.exists() {

@@ -17,15 +17,26 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 
 #[cfg(test)]
 pub mod test {
-    use std::{env, fs::File, path::Path};
+    use std::{fs::File, path::Path};
 
-    use crate::{client::ChatGPT, types::CompletionResponse};
+    use crate::client::ChatGPT;
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
-        let mut client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let resp = client
             .send_simple_message("Write me a short pun about the Rust language.")
+            .await?;
+        assert!(!resp.message_choices.is_empty());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_undirected_conversation() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.new_conversation();
+        let resp = conv
+            .send_message("Could you tell me what day is it today?")
             .await?;
         assert!(!resp.message_choices.is_empty());
         Ok(())
