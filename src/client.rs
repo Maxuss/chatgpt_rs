@@ -1,18 +1,14 @@
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use chrono::Local;
 use reqwest::header::AUTHORIZATION;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, USER_AGENT},
-    Method, Url,
+    header::{HeaderMap, HeaderValue},
+    Url,
 };
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use uuid::Uuid;
 
 use crate::converse::Conversation;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role};
