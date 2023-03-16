@@ -15,9 +15,14 @@ pub enum Error {
     /// An error that occurred when parsing data, e.g. a UUID
     #[error("Parsing error has occurred: {0}")]
     ParsingError(String),
-    /// A serde-provoked error has occurred
+    /// A serde-provoked JSON error has occurred
+    #[cfg(feature = "json")]
     #[error("Failed to (de)serialize data: {0}")]
-    SerdeError(#[from] serde_json::Error),
+    SerdeJsonError(#[from] serde_json::Error),
+    #[cfg(feature = "postcard")]
+    /// A postcard-provoked error has occurred
+    #[error("Failed to (de)serialize data: {0}")]
+    PostcardError(#[from] postcard::Error),
     /// An error has occurred when parsing a string from UTF-8 bytes
     #[error("Failed to parse string from UTF-8: {0}")]
     StringError(#[from] FromUtf8Error),

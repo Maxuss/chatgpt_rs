@@ -36,7 +36,8 @@ impl ChatGPT {
 
     /// Restores a conversation from local conversation JSON file.
     /// The conversation file can originally be saved using the [`Conversation::save_history_json()`].
-    pub async fn restore_conversation<P: AsRef<Path>>(
+    #[cfg(feature = "json")]
+    pub async fn restore_conversation_json<P: AsRef<Path>>(
         &self,
         file: P,
     ) -> crate::Result<Conversation> {
@@ -52,6 +53,28 @@ impl ChatGPT {
         Ok(Conversation::new_with_history(
             self.clone(),
             serde_json::from_str(&buf)?,
+        ))
+    }
+
+    /// Restores a conversation from local conversation postcard file.
+    /// The conversation file can originally be saved using the [`Conversation::save_history_postcard()`].
+    #[cfg(feature = "postcard")]
+    pub async fn restore_conversation_postcard<P: AsRef<Path>>(
+        &self,
+        file: P,
+    ) -> crate::Result<Conversation> {
+        let path = file.as_ref();
+        if !path.exists() {
+            return Err(crate::err::Error::ParsingError(
+                "Conversation history Postcard file does not exist".to_string(),
+            ));
+        }
+        let mut file = File::open(path).await?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).await?;
+        Ok(Conversation::new_with_history(
+            self.clone(),
+            postcard::from_bytes(&buf)?,
         ))
     }
 

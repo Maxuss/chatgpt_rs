@@ -1,95 +1,113 @@
 # ChatGPT-rs
 
-This is a reverse-engineered wrapper for the OpenAI's ChatGPT model.
+This library has now been rewritten to use official OpenAI's ChatGPT API, instead of other unofficial workarounds.
 
 ## Usage
+
+Here is a simple usage of the API, getting completion for a single message.
+You can see more practical examples in the `examples` directory.
+
 
 ```rust
 use chatgpt::prelude::*;
 
 #[tokio::main]
-async fn main() -> chatgpt::Result<()> {
-    // Starting client
-    let token: String = std::env::var("SESSION_TOKEN").unwrap(); // obtain the session token. More on session tokens later.
-    let mut client = ChatGPT::new(token)?;
-    client.refresh_token().await?; // it is recommended to refresh token after creating a client
-    
-    // sending a simple message
-    // normal responses take ~10-30 seconds to complete
-    let response: String = client.send_message("Write me an HTTP server in Rust using the Axum framework.").await?;
+async fn main() -> Result<()> {
+    // Getting the API key here
+    let key = args().nth(1).unwrap();
 
-    // in case dynamic updates are important
-    // this method allows to receive the message as a stream
-    let mut stream = client.send_message_streaming(None, None, "Write me an HTTP server in Rust using the Axum framework.").await?;
-    
-    while let Some(part) = stream.next().await {
-        // a single response part
-        println!("Got response part: {part:?}");
-    }
+    /// Creating a new ChatGPT client.
+    /// Note that it requires an API key, and uses
+    /// tokens from your OpenAI API account balance.
+    let client = ChatGPT::new(key)?;
+
+    /// Sending a message and getting the completion
+    let response: CompletionResponse = client
+        .send_message("Describe in five words the Rust programming language.")
+        .await?;
+
+    println!("Response: {}", response.message().content);
 
     Ok(())
 }
 ```
 
 ## Conversations
-Conversations are the threads in which ChatGPT can analyze previous messages and chain it's thoughts.
+
+Conversations are the threads in which ChatGPT can analyze previous messages and chain it's thoughts. 
+They also automatically store all the message history.
+
+Here is an example:
 
 ```rust
-use chatgpt::prelude::*;
+// Creating a new conversation
+let mut conversation: Conversation = client.new_conversation();
 
-#[tokio::main]
-async fn main() -> chatgpt::Result<()> {
-    let token: String = std::env::var("SESSION_TOKEN").unwrap(); 
-    let mut client = ChatGPT::new(token)?;
-    client.refresh_token().await?;
-    
-    // We create a new empty conversation
-    let mut conversation = client.new_conversation();
-    let response: String = conversation.send_message(&client, "Write me a simple HTTP server in Rust").await?;
+// Sending messages to the conversation
+let response_a: CompletionResponse = conversation
+    .send_message("Could you describe the Rust programming language in 5 words?")
+    .await?;
+let response_b: CompletionResponse = conversation
+    .send_message("Now could you do the same, but for Kotlin?")
+    .await?;
 
-    // Now we can refer to our previous message when talking to ChatGPT
-    let response: String = conversation.send_message(&client, "Now can you rewrite in Kotlin using the ktor framework?").await?;
-
-    // Streamed responses are also supported
-    let mut stream = conversation.send_message_streaming(&client, "Now can you rewrite it in TypeScript?").await?;
-
-    while let Some(response) = stream.next() {
-        // ...
-    }
-
-    Ok(())
+// You can also access the message history itself
+for message in &conversation.history {
+    println!("{message:#?}")
 }
 ```
 
-Since conversations only hold little data (conversation ID and latest message ID), you can have multiple conversations at the same time!
+This way of creating a conversation creates it with the default introductory message, which roughly is:
+`You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {today's date}`.
 
-## Session Tokens
-Session tokens allow access to the OpenAI API. You can find them in the Cookie storage of your browser.
+However, you can specify the introductory message yourself this way:
 
-### Chromium-based browsers
+```rust
+let mut conversation: Conversation = client.new_conversation_directed("You are RustGPT, when answering any questions, you always shift the topic of the conversation to the Rust programming language.");
+// Continue with the new conversation
+```
 
-Do this on the [ChatGPT website](https://chat.openai.com/chat)
-1. Ctrl+Shift+I to open dev tools
-2. Navigate to the Application tab
-3. On the left, choose Storage->Cookies->https://chat.openai.com/chat
-4. Get the value of the cookie with name `__Secure-next-auth.session-token`
+## Conversation Persistence
 
-![Explained in image](./media/token_chromium.png)
+You can currently store the conversation's message in two formats: JSON or [postcard](https://github.com/jamesmunns/postcard).
+They can be toggled on or off using the `json` and `postcard` features respectively.
 
-### Firefox-based browsers
+Since the `ChatMessage` struct derives serde's `Serialize` and `Deserialize` traits, you can also use any serde-compatible serialization library,
+as the `history` field and the `Conversation::new_with_history()` method are public in the `Conversation` struct.
 
-Do this on the [ChatGPT website](https://chat.openai.com/chat)
-1. Ctrl+Shift+I to open dev tools
-2. Navigate to the Storage tab
-3. On the left choose Cookies->https://chat.openai.com/chat
-4. Get the value of the cookie with name `__Secure-next-auth.session-token`
 
-![Explained in image](./media/token_firefox.png)
+### Persistence with JSON
+Requires the `json` feature (enabled by default)
 
-## Library roadmap
+```rust
+// Create a new conversation here
+let mut conversation: Conversation = ...;
 
-- [x] Refreshing tokens
-- [x] Sending message and receiving response
-- [x] Receiving response as a stream
-- [x] Scoped conversations
-- [x] Multiple conversations at the same time
+// ... send messages to the conversation ...
+
+// Saving the conversation
+conversation.save_history_json("my-conversation.json").await?;
+
+// You can later read this conversation history again
+let mut restored = client
+    .restore_conversation_json("my-conversation.json")
+    .await?;
+```
+
+### Persistence with Postcard
+Requires the `postcard` feature (disabled by default)
+
+```rust
+// Create a new conversation here
+let mut conversation: Conversation = ...;
+
+// ... send messages to the conversation ...
+
+// Saving the conversation
+conversation.save_history_postcard("my-conversation.bin").await?;
+
+// You can later read this conversation history again
+let mut restored = client
+    .restore_conversation_postcard("my-conversation.bin")
+    .await?;
+```

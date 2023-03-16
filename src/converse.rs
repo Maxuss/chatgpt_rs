@@ -47,7 +47,8 @@ impl Conversation {
         Ok(resp)
     }
 
-    /// Saves the history to a local JSON file, that can be restored to a conversation on runtime later.
+    /// Saves the history to a local JSON file, that can be restored to a conversation at runtime later.
+    #[cfg(feature = "json")]
     pub async fn save_history_json<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
         let path = to.as_ref();
         if path.exists() {
@@ -55,6 +56,19 @@ impl Conversation {
         }
         let mut file = File::create(path).await?;
         file.write_all(&serde_json::to_vec(&self.history)?).await?;
+        Ok(())
+    }
+
+    /// Saves the history to a local postcard file, that can be restored to a conversation at runtime later.
+    #[cfg(feature = "postcard")]
+    pub async fn save_history_postcard<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
+        let path = to.as_ref();
+        if path.exists() {
+            tokio::fs::remove_file(path).await?;
+        }
+        let mut file = File::create(path).await?;
+        file.write_all(&postcard::to_allocvec(&self.history)?)
+            .await?;
         Ok(())
     }
 }
