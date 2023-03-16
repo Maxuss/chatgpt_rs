@@ -3,7 +3,7 @@
 
 /// This module contains the ChatGPT client
 pub mod client;
-/// This module contains all the conversation logic
+/// Conversation related types
 pub mod converse;
 /// This module contains the errors related to the API
 pub mod err;
@@ -17,82 +17,69 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 
 #[cfg(test)]
 pub mod test {
-    use crate::{client::ChatGPT, types::ResponsePart};
-    use futures_util::StreamExt;
-    #[tokio::test]
-    async fn test_client() {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token).unwrap();
-        assert!(matches!(client.refresh_token().await, Ok(_)))
-    }
+    use std::{fs::File, path::Path};
+
+    use crate::client::ChatGPT;
 
     #[tokio::test]
-    async fn test_message() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        // std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
-        client.refresh_token().await?;
-        let response = client
-            .send_message_full(None, None, "Write me a simple sorting algorithm in Rust")
+    async fn test_client() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let resp = client
+            .send_message("Write me a short pun about the Rust language.")
             .await?;
-        println!("{}", response.message.content.parts[0]);
+        assert!(!resp.message_choices.is_empty());
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_message_streaming() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
-        client.refresh_token().await?;
-        let mut stream = client
-            .send_message_streaming(None, None, "Write me a simple sorting algorithm in Rust")
+    async fn test_undirected_conversation() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.new_conversation();
+        let resp = conv
+            .send_message("Could you tell me what day is it today?")
             .await?;
-        while let Some(element) = stream.next().await {
-            let element = element?;
-            println!("{element:#?}")
-        }
+        assert!(!resp.message_choices.is_empty());
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_conversations() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
-        client.refresh_token().await?;
-        let mut conversation = client.new_conversation();
-        let response = conversation
-            .send_message(&client, "Write a simple sorting algorithm in Rust")
+    async fn test_conversation() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.new_conversation_directed(
+            "You are TestGPT, an AI model developed in Rust in year 2023.",
+        );
+        let resp_a = conv.send_message("Could you tell me who you are?").await?;
+        let resp_b = conv
+            .send_message("What did I ask you about in my first question?")
             .await?;
-        println!("{response}");
-        let response = conversation
-            .send_message(&client, "Now can you rewrite it in Kotlin?")
-            .await?;
-        println!("{response}");
+        assert!(!resp_a.message_choices.is_empty() && !resp_b.message_choices.is_empty());
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_conversations_streaming() -> crate::Result<()> {
-        let token = std::env::var("SESSION_TOKEN").unwrap();
-        let mut client = ChatGPT::new(&token)?;
-        client.refresh_token().await?;
-        let mut conversation = client.new_conversation();
-        let response = conversation
-            .send_message(&client, "Write a simple sorting algorithm in Rust")
+    async fn test_conversation_saving() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.new_conversation_directed(
+            "You are TestGPT, an AI model developed in Rust in year 2023.",
+        );
+        let resp_a = conv.send_message("Could you tell me who you are?").await?;
+        let resp_b = conv
+            .send_message("What did I ask you about in my first question?")
             .await?;
-        println!("{response}");
-        let mut stream = conversation
-            .send_message_streaming(&client, "Now can you rewrite it in Kotlin?")
+        conv.save_history_json("history.json").await?;
+        let path: &Path = "history.json".as_ref();
+        assert!(path.exists());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_conversation_restoring() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.restore_conversation_json("history.json").await?;
+        let resp = conv
+            .send_message("Could you tell me what did I ask you about in my first question?")
             .await?;
-        while let Some(part) = stream.next().await {
-            let response = part?;
-            match response {
-                ResponsePart::Processing(data) => {
-                    println!("{}", data.message.content.parts[0]);
-                }
-                _ => continue,
-            }
-        }
+        conv.save_history_json("history.json").await?;
         Ok(())
     }
 }

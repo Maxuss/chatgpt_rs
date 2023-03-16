@@ -1,93 +1,74 @@
-use futures_util::{Stream, StreamExt};
-use uuid::Uuid;
+use std::path::Path;
 
-use crate::{client::ChatGPT, types::ResponsePart};
+use tokio::{fs::File, io::AsyncWriteExt};
 
-/// A container for a chat conversation
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct ChatConversation {
-    pub(crate) conversation_id: Option<Uuid>,
-    pub(crate) parent_message_id: Option<Uuid>,
+use crate::{
+    client::ChatGPT,
+    types::{ChatMessage, CompletionResponse, Role},
+};
+
+/// Stores a single conversation session, and automatically saves message history
+pub struct Conversation {
+    client: ChatGPT,
+    /// All the messages sent and received, starting with the beginning system message
+    pub history: Vec<ChatMessage>,
 }
 
-impl ChatConversation {
-    /// Sends a message into this conversation
-    ///
-    /// Example:
-    /// ```rust
-    /// # use chatgpt::prelude::*;
-    /// # use chatgpt::client::ChatGPT;
-    /// # #[tokio::main]
-    /// # async fn main() -> chatgpt::Result<()> {
-    /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
-    /// # client.refresh_token().await?;
-    /// let mut conversation = client.new_conversation();
-    /// let response = conversation.send_message(&mut client, "Write me a sorting algorithm in Rust.").await?;
-    /// println!("{response}");
-    /// let response = conversation.send_message(&mut client, "Now can you rewrite it in Kotlin?").await?;
-    /// println!("{response}");
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn send_message<S: Into<String>>(
-        &mut self,
-        client: &ChatGPT,
-        message: S,
-    ) -> crate::Result<String> {
-        let response = client
-            .send_message_full(self.parent_message_id, self.conversation_id, message)
-            .await?;
-        if let Some(id) = response.conversation_id {
-            self.conversation_id = Some(id);
+impl Conversation {
+    /// Constructs a new conversation from an API client and the introductory message
+    pub fn new(client: ChatGPT, first_message: String) -> Self {
+        Self {
+            client,
+            history: vec![ChatMessage {
+                role: Role::System,
+                content: first_message,
+            }],
         }
-
-        self.parent_message_id = Some(response.message.id);
-
-        Ok(response.message.content.parts[0].to_owned())
     }
 
-    /// Sends a message into this conversation, returning the result as a stream.
-    ///
-    /// Example:
-    /// ```rust
-    /// # use chatgpt::prelude::*;
-    /// # use chatgpt::client::ChatGPT;
-    /// # #[tokio::main]
-    /// # async fn main() -> chatgpt::Result<()> {
-    /// # let mut client = ChatGPT::new(std::env::var("SESSION_TOKEN").unwrap())?;
-    /// # client.refresh_token().await?;
-    /// let mut conversation = client.new_conversation();
-    /// let response = conversation.send_message(&mut client, "Write me a sorting algorithm in Rust.").await?;
-    /// println!("{response}");
-    /// let mut stream = conversation.send_message_streaming(&mut client, "Now can you rewrite it in Kotlin?").await?;
-    /// while let Some(response) = stream.next().await {
-    ///     println!("{response:?}");
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn send_message_streaming<S: Into<String>>(
-        &mut self,
-        client: &ChatGPT,
-        message: S,
-    ) -> crate::Result<impl Stream<Item = crate::Result<ResponsePart>>> {
-        let mut stream = client
-            .send_message_streaming(self.parent_message_id, self.conversation_id, message)
-            .await?;
-        loop {
-            // we are eating one iteration of messages off stream to update our conversation state
-            match stream.next().await {
-                Some(Ok(ResponsePart::Processing(response))) => {
-                    if let Some(id) = response.conversation_id {
-                        self.conversation_id = Some(id);
-                    }
+    /// Constructs a new conversation from a pre-initialized chat history
+    pub fn new_with_history(client: ChatGPT, history: Vec<ChatMessage>) -> Self {
+        Self { client, history }
+    }
 
-                    self.parent_message_id = Some(response.message.id);
-                    break;
-                }
-                _ => continue,
-            }
+    /// Sends the message to the ChatGPT API and returns the completion response.
+    ///
+    /// Execution speed depends on API response times.
+    pub async fn send_message<S: Into<String>>(
+        &mut self,
+        message: S,
+    ) -> crate::Result<CompletionResponse> {
+        self.history.push(ChatMessage {
+            role: Role::User,
+            content: message.into(),
+        });
+        let resp = self.client.send_history(&self.history).await?;
+        self.history.push(resp.message_choices[0].message.clone());
+        Ok(resp)
+    }
+
+    /// Saves the history to a local JSON file, that can be restored to a conversation at runtime later.
+    #[cfg(feature = "json")]
+    pub async fn save_history_json<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
+        let path = to.as_ref();
+        if path.exists() {
+            tokio::fs::remove_file(path).await?;
         }
-        Ok(stream)
+        let mut file = File::create(path).await?;
+        file.write_all(&serde_json::to_vec(&self.history)?).await?;
+        Ok(())
+    }
+
+    /// Saves the history to a local postcard file, that can be restored to a conversation at runtime later.
+    #[cfg(feature = "postcard")]
+    pub async fn save_history_postcard<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
+        let path = to.as_ref();
+        if path.exists() {
+            tokio::fs::remove_file(path).await?;
+        }
+        let mut file = File::create(path).await?;
+        file.write_all(&postcard::to_allocvec(&self.history)?)
+            .await?;
+        Ok(())
     }
 }

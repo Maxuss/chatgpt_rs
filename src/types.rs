@@ -1,103 +1,106 @@
-use core::f32;
-
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-/// Response that is received on the status refresh endpoint
-#[derive(Debug, Clone, Deserialize)]
-pub struct SessionRefresh {
-    /// User, to whom the token belongs
-    pub user: User,
-    /// Date when the token expires
-    pub expires: String,
-    /// The new refreshed token
-    #[serde(rename = "accessToken")]
-    pub access_token: String,
-}
-
-/// A container for User when returned from the session refresh
-#[derive(Debug, Clone, Deserialize)]
-pub struct User {
-    /// Unique ID of this user
-    pub id: String,
-    /// Username of this user
-    pub name: String,
-    /// Email of this user
-    pub email: String,
-    /// Link to the avatar of this user. Usually a gravatar link
-    pub image: String,
-    /// Seems to be the same as the image field
-    pub picture: String,
-    /// Groups this user is in
-    pub groups: Vec<String>,
-    /// Special OpenAI features this user has
-    pub features: Vec<String>,
-}
-
-/// A response that is received on the conversation endpoint
-#[derive(Debug, Clone, Deserialize, PartialEq, PartialOrd)]
-pub struct ConversationResponse {
-    /// ID of the conversation this response belongs to
-    pub conversation_id: Option<Uuid>,
-    /// Message this conversation generated
-    pub message: Message,
-    /// Error (if present) that has occurred
-    pub error: Option<String>,
-}
-
-/// The message that the user or the AI sent
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct Message {
-    /// Unique ID of the message
-    pub id: Uuid,
-    /// Content of this message
-    pub content: MessageContent,
-    /// Kind of sender. Either AI or user
-    pub role: Role,
-    /// The user that sent this message
-    pub user: Option<String>,
-    /// Creation time of this message
-    pub create_time: Option<String>,
-    /// Time at which this message was updated
-    pub update_time: Option<String>,
-    /// Weight for this message. The AI seems to return messages with 1.0 weight. The use for this field is unknown
-    pub weight: f32,
-    /// Recipient, who was this message sent to
-    pub recipient: String,
-}
-
-/// Kind of content in the message
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-#[serde(rename_all = "snake_case")]
-pub enum MessageContentType {
-    /// A simple text message
-    Text,
-}
-
-/// Kind of sender
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-#[serde(rename_all = "snake_case")]
+/// A role of a message sender, can be:
+/// - `System`, for starting system message, that sets the tone of model
+/// - `Assistant`, for messages sent by ChatGPT
+/// - `User`, for messages sent by user
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Role {
-    /// A user sent this message
-    User,
-    /// An AI sent this message
+    /// A system message, automatically sent at the start to set the tone of the model
+    System,
+    /// A message sent by ChatGPT
     Assistant,
+    /// A message sent by the user
+    User,
 }
 
-/// The content of the message
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct MessageContent {
-    /// Kind of message
-    pub content_type: MessageContentType,
-    /// The text parts of this message. The AI seems to always output the message in a single element array, as well as the user
-    pub parts: Vec<String>,
+/// Container for the sent/received ChatGPT messages
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct ChatMessage {
+    /// Role of message sender
+    pub role: Role,
+    /// Actual content of the message
+    pub content: String,
 }
 
-/// Part of a mapped response returned from the [`ChatGPT::send_message_streaming()`](`chatgpt::client::ChatGPT::send_message_streaming()`) method
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum ResponsePart {
-    /// Got a chunk of response containing unfinished message response
-    Processing(ConversationResponse),
-    /// Got an indication that the final response was returned
-    Done(ConversationResponse),
+/// A request struct sent to the API to request a message completion
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize)]
+pub struct CompletionRequest<'a> {
+    /// The model to be used, currently `gpt-3.5-turbo`, but may change in future
+    pub model: &'a str,
+    /// The message history, including the message that requires completion, which should be the last one
+    pub messages: &'a Vec<ChatMessage>,
+}
+
+/// Represents a response from the API
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[serde(untagged)]
+pub enum ServerResponse {
+    /// An error occurred, most likely the model was just overloaded
+    Error {
+        /// The error that happened
+        error: CompletionError,
+    },
+    /// Completion successfuly completed
+    Completion(CompletionResponse),
+}
+
+/// An error happened while requesting completion
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct CompletionError {
+    /// Message, describing the error
+    pub message: String,
+    /// The type of error. Example: `server_error`
+    #[serde(rename = "type")]
+    pub error_type: String,
+}
+
+/// A response struct received from the API after requesting a message completion
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct CompletionResponse {
+    /// Unique ID of the message, but not in a UUID format.
+    /// Example: `chatcmpl-6p5FEv1JHictSSnDZsGU4KvbuBsbu`
+    #[serde(rename = "id")]
+    pub message_id: String,
+    /// Unix seconds timestamp of when the response was created
+    #[serde(rename = "created")]
+    pub created_timestamp: u64,
+    /// The model that was used for this completion
+    pub model: String,
+    /// Token usage of this completion
+    pub usage: TokenUsage,
+    /// Message choices for this response, guaranteed to contain at least one message response
+    #[serde(rename = "choices")]
+    pub message_choices: Vec<MessageChoice>,
+}
+
+impl CompletionResponse {
+    /// A shortcut to access the message response
+    pub fn message(&self) -> &ChatMessage {
+        // Unwrap is safe here, as we know that at least one message choice is provided
+        &self.message_choices.first().unwrap().message
+    }
+}
+
+/// A message completion choice struct
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct MessageChoice {
+    /// The actual message
+    pub message: ChatMessage,
+    /// The reason completion was stopped
+    pub finish_reason: String,
+    /// The index of this message in the outer `message_choices` array
+    pub index: u32,
+}
+
+/// The token usage of a specific response
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct TokenUsage {
+    /// Tokens spent on the prompt message (including previous messages)
+    pub prompt_tokens: u32,
+    /// Tokens spent on the completion message
+    pub completion_tokens: u32,
+    /// Total amount of tokens used (`prompt_tokens + completion_tokens`)
+    pub total_tokens: u32,
 }

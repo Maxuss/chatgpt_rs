@@ -1,3 +1,4 @@
-pub use crate::client::{ChatGPT, ClientOptions};
-pub use crate::types::{ConversationResponse, Message, MessageContent, ResponsePart};
-pub use futures_util::{Stream, StreamExt};
+pub use crate::client::ChatGPT;
+pub use crate::converse::Conversation;
+pub use crate::types::{ChatMessage, MessageChoice, TokenUsage};
+pub use crate::Result;

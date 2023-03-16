@@ -1,6 +1,5 @@
-use std::string::FromUtf8Error;
+use std::{env::VarError, string::FromUtf8Error};
 
-use eventsource_stream::EventStreamError;
 use reqwest::header::InvalidHeaderValue;
 use thiserror::Error;
 
@@ -16,16 +15,29 @@ pub enum Error {
     /// An error that occurred when parsing data, e.g. a UUID
     #[error("Parsing error has occurred: {0}")]
     ParsingError(String),
-    /// A serde-provoked error has occurred
+    /// A serde-provoked JSON error has occurred
+    #[cfg(feature = "json")]
     #[error("Failed to (de)serialize data: {0}")]
-    SerdeError(#[from] serde_json::Error),
+    SerdeJsonError(#[from] serde_json::Error),
+    #[cfg(feature = "postcard")]
+    /// A postcard-provoked error has occurred
+    #[error("Failed to (de)serialize data: {0}")]
+    PostcardError(#[from] postcard::Error),
     /// An error has occurred when parsing a string from UTF-8 bytes
     #[error("Failed to parse string from UTF-8: {0}")]
     StringError(#[from] FromUtf8Error),
-    /// A backend related error has occurred
-    #[error("An error occurred while processing request: {0}")]
-    BackendError(String),
-    /// An error has occurred when processing events over stream
-    #[error("An error occurred while iterating over stream: {0}")]
-    StreamError(#[from] EventStreamError<reqwest::Error>),
+    /// An error on the backend happened
+    #[error("An error (type: {error_type}) occurred on the API backend: {message}")]
+    BackendError {
+        /// Message, describing this error
+        message: String,
+        /// The type of error
+        error_type: String,
+    },
+    /// A Tokio IO error happened
+    #[error("Error happened during an IO operation: {0}")]
+    IOError(#[from] tokio::io::Error),
+    /// Most likely env var not provided
+    #[error("Error while trying to access an environment variable: {0}")]
+    VarError(#[from] VarError),
 }
