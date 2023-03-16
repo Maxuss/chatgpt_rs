@@ -16,14 +16,13 @@ path = "./src/chatgpt.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11.13", features = ["json", "stream"] }
-tokio = { version = "1.23.0", features = ["macros"] }
-serde = { version = "1.0.149", features = ["derive"] }
-serde_json = { version = "1.0.89", optional = true }
-thiserror = "1.0.37"
+reqwest = { version = "0.11.14", features = ["json"] }
+tokio = { version = "1.26.0", features = ["macros"] }
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = { version = "1.0.93", optional = true }
+thiserror = "1.0.38"
 url = "2.3.1"
 chrono = "0.4.23"
-
 postcard = { version = "1.0.4", features = ["alloc"], optional = true }
 
 [dev-dependencies]
@@ -31,5 +30,5 @@ tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = ["json"]
-json = ["dep:serde_json"]
-postcard = ["dep:postcard"]
+json = ["dep:serde_json", "tokio/fs"]
+postcard = ["dep:postcard", "tokio/fs"]
