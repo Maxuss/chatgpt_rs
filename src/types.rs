@@ -33,6 +33,29 @@ pub struct CompletionRequest<'a> {
     pub messages: &'a Vec<ChatMessage>,
 }
 
+/// Represents a response from the API
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[serde(untagged)]
+pub enum ServerResponse {
+    /// An error occurred, most likely the model was just overloaded
+    Error {
+        /// The error that happened
+        error: CompletionError,
+    },
+    /// Completion successfuly completed
+    Completion(CompletionResponse),
+}
+
+/// An error happened while requesting completion
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct CompletionError {
+    /// Message, describing the error
+    pub message: String,
+    /// The type of error. Example: `server_error`
+    #[serde(rename = "type")]
+    pub error_type: String,
+}
+
 /// A response struct received from the API after requesting a message completion
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 pub struct CompletionResponse {

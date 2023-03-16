@@ -75,7 +75,7 @@ pub mod test {
     #[tokio::test]
     async fn test_conversation_restoring() -> crate::Result<()> {
         let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
-        let mut conv = client.restore_conversation("history.json").await?;
+        let mut conv = client.restore_conversation_json("history.json").await?;
         let resp = conv
             .send_message("Could you tell me what did I ask you about in my first question?")
             .await?;

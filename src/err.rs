@@ -26,9 +26,14 @@ pub enum Error {
     /// An error has occurred when parsing a string from UTF-8 bytes
     #[error("Failed to parse string from UTF-8: {0}")]
     StringError(#[from] FromUtf8Error),
-    /// A backend related error has occurred
-    #[error("An error occurred while processing request: {0}")]
-    BackendError(String),
+    /// An error on the backend happened
+    #[error("An error (type: {error_type}) occurred on the API backend: {message}")]
+    BackendError {
+        /// Message, describing this error
+        message: String,
+        /// The type of error
+        error_type: String,
+    },
     /// A Tokio IO error happened
     #[error("Error happened during an IO operation: {0}")]
     IOError(#[from] tokio::io::Error),

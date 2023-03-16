@@ -11,7 +11,7 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 use crate::converse::Conversation;
-use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role};
+use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
 
 /// The client that operates the ChatGPT API
 #[derive(Debug, Clone)]
@@ -82,7 +82,7 @@ impl ChatGPT {
     ///
     /// Conversations record message history.
     pub fn new_conversation(&self) -> Conversation {
-        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now()))
+        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now().format("%d/%m/%Y %H:%M")))
     }
 
     /// Starts a new conversation with a specified starting message.
@@ -100,7 +100,8 @@ impl ChatGPT {
         &self,
         history: &Vec<ChatMessage>,
     ) -> crate::Result<CompletionResponse> {
-        self.client
+        let response: ServerResponse = self
+            .client
             .post(
                 Url::from_str("https://api.openai.com/v1/chat/completions")
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
@@ -112,8 +113,14 @@ impl ChatGPT {
             .send()
             .await?
             .json()
-            .await
-            .map_err(crate::err::Error::from)
+            .await?;
+        match response {
+            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
+                message: error.message,
+                error_type: error.error_type,
+            }),
+            ServerResponse::Completion(completion) => Ok(completion),
+        }
     }
 
     /// Sends a single message to the API without preserving message history.
@@ -121,7 +128,8 @@ impl ChatGPT {
         &self,
         message: S,
     ) -> crate::Result<CompletionResponse> {
-        self.client
+        let response: ServerResponse = self
+            .client
             .post(
                 Url::from_str("https://api.openai.com/v1/chat/completions")
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
@@ -136,7 +144,13 @@ impl ChatGPT {
             .send()
             .await?
             .json()
-            .await
-            .map_err(crate::err::Error::from)
+            .await?;
+        match response {
+            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
+                message: error.message,
+                error_type: error.error_type,
+            }),
+            ServerResponse::Completion(completion) => Ok(completion),
+        }
     }
 }
