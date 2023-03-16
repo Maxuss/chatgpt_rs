@@ -25,7 +25,7 @@ pub mod test {
     async fn test_client() -> crate::Result<()> {
         let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let resp = client
-            .send_simple_message("Write me a short pun about the Rust language.")
+            .send_message("Write me a short pun about the Rust language.")
             .await?;
         assert!(!resp.message_choices.is_empty());
         Ok(())

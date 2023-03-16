@@ -94,7 +94,7 @@ impl ChatGPT {
     }
 
     /// Sends a single message to the API without preserving message history.
-    pub async fn send_simple_message<S: Into<String>>(
+    pub async fn send_message<S: Into<String>>(
         &self,
         message: S,
     ) -> crate::Result<CompletionResponse> {
