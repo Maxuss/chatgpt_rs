@@ -21,9 +21,12 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 pub mod test {
     use std::{fs::File, path::Path};
 
+    use futures::StreamExt;
+
     use crate::{
         client::ChatGPT,
         config::{ChatGPTEngine, ModelConfiguration},
+        types::ResponseChunk,
     };
 
     #[tokio::test]
@@ -101,6 +104,17 @@ pub mod test {
             .send_message("Could you give me names of three popular Rust web frameworks?")
             .await?;
         assert!(response.message_choices.len() == 3);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_streaming() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let response = client
+            .send_message_streaming("Could you give me names of three popular Rust web frameworks?")
+            .await?;
+        let collected = response.collect::<Vec<ResponseChunk>>().await;
+        assert_eq!(collected.last().unwrap().to_owned(), ResponseChunk::Done);
         Ok(())
     }
 }

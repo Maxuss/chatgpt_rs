@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// - `System`, for starting system message, that sets the tone of model
 /// - `Assistant`, for messages sent by ChatGPT
 /// - `User`, for messages sent by user
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize, Eq, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     /// A system message, automatically sent at the start to set the tone of the model
@@ -116,4 +116,39 @@ pub struct TokenUsage {
     pub completion_tokens: u32,
     /// Total amount of tokens used (`prompt_tokens + completion_tokens`)
     pub total_tokens: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+pub enum ResponseChunk {
+    Content {
+        delta: String,
+        response_index: usize,
+    },
+    BeginResponse {
+        role: Role,
+        response_index: usize,
+    },
+    CloseResponse {
+        response_index: usize,
+    },
+    Done,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct InboundResponseChunk {
+    pub choices: Vec<InboundChunkChoice>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct InboundChunkChoice {
+    pub delta: InboundChunkPayload,
+    pub index: usize,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum InboundChunkPayload {
+    AnnounceRoles { role: Role },
+    StreamContent { content: String },
+    Close {},
 }
