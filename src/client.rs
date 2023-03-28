@@ -145,6 +145,54 @@ impl ChatGPT {
         }
     }
 
+    pub async fn send_history_streaming(
+        &self,
+        history: &Vec<ChatMessage>,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        let response_stream = self
+            .client
+            .post(
+                Url::from_str("https://api.openai.com/v1/chat/completions")
+                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+            )
+            .json(&CompletionRequest {
+                model: self.config.engine.as_ref(),
+                stream: true,
+                messages: history,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
+            })
+            .send()
+            .await?
+            .bytes_stream()
+            .eventsource();
+        Ok(response_stream.map(move |part| {
+            let chunk = &part.expect("Stream closed abruptly!").data;
+            if chunk == "[DONE]" {
+                return ResponseChunk::Done;
+            }
+            let data: InboundResponseChunk =
+                serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
+            let choice = data.choices[0].to_owned();
+            match choice.delta {
+                InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
+                    role,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
+                    delta: content,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
+                    response_index: choice.index,
+                },
+            }
+        }))
+    }
+
     /// Sends a single message to the API without preserving message history.
     pub async fn send_message<S: Into<String>>(
         &self,

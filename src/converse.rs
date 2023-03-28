@@ -1,10 +1,11 @@
 use std::path::Path;
 
+use futures::Stream;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::{
     client::ChatGPT,
-    types::{ChatMessage, CompletionResponse, Role},
+    types::{ChatMessage, CompletionResponse, ResponseChunk, Role},
 };
 
 /// Stores a single conversation session, and automatically saves message history
@@ -49,6 +50,18 @@ impl Conversation {
         let resp = self.client.send_history(&self.history).await?;
         self.history.push(resp.message_choices[0].message.clone());
         Ok(resp)
+    }
+
+    pub async fn send_message_streaming<S: Into<String>>(
+        &mut self,
+        message: S,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        self.history.push(ChatMessage {
+            role: Role::User,
+            content: message.into(),
+        });
+        let stream = self.client.send_history_streaming(&self.history).await?;
+        Ok(stream)
     }
 
     /// Saves the history to a local JSON file, that can be restored to a conversation at runtime later.

@@ -117,4 +117,19 @@ pub mod test {
         assert_eq!(collected.last().unwrap().to_owned(), ResponseChunk::Done);
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_streaming_conv() -> crate::Result<()> {
+        let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
+        let mut conv = client.new_conversation();
+        let _ = conv
+            .send_message("Could you give me names of three popular Rust web frameworks?")
+            .await?;
+        let streamed = conv
+            .send_message_streaming("Now could you do the same but for Kotlin?")
+            .await?;
+        let collected = streamed.collect::<Vec<ResponseChunk>>().await;
+        assert_eq!(collected.last().unwrap().to_owned(), ResponseChunk::Done);
+        Ok(())
+    }
 }
