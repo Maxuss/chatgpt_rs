@@ -21,7 +21,10 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 pub mod test {
     use std::{fs::File, path::Path};
 
-    use crate::client::ChatGPT;
+    use crate::{
+        client::ChatGPT,
+        config::{ChatGPTEngine, ModelConfiguration},
+    };
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
@@ -78,10 +81,26 @@ pub mod test {
     async fn test_conversation_restoring() -> crate::Result<()> {
         let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let mut conv = client.restore_conversation_json("history.json").await?;
-        let resp = conv
+        let _resp = conv
             .send_message("Could you tell me what did I ask you about in my first question?")
             .await?;
         conv.save_history_json("history.json").await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_some_config() -> crate::Result<()> {
+        let client = ChatGPT::new_with_config(
+            std::env::var("TEST_API_KEY")?,
+            ModelConfiguration::default()
+                .with_temperature(0.9)
+                .with_engine(ChatGPTEngine::Gpt35Turbo_0301)
+                .with_reply_count(3),
+        )?;
+        let response = client
+            .send_message("Could you give me names of three popular Rust web frameworks?")
+            .await?;
+        assert!(response.message_choices.len() == 3);
         Ok(())
     }
 }
