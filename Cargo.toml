@@ -27,7 +27,6 @@ postcard = { version = "1.0.4", features = ["alloc"], optional = true }
 eventsource-stream = { version = "0.2.3", optional = true }
 futures = { version = "0.3.26", optional = true }
 futures-util = { version = "0.3.26", optional = true }
-bytes = { version = "1.4.0", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
@@ -37,7 +36,6 @@ default = ["json", "streams"]
 streams = [
     "dep:eventsource-stream",
     "dep:futures-util",
-    "dep:bytes",
     "dep:futures",
     "reqwest/stream",
 ]
