@@ -31,6 +31,10 @@ impl Conversation {
         Self { client, history }
     }
 
+    pub fn rollback(&mut self) -> Option<ChatMessage> {
+        self.history.pop()
+    }
+
     /// Sends the message to the ChatGPT API and returns the completion response.
     ///
     /// Execution speed depends on API response times.

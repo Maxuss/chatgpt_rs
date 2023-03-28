@@ -3,6 +3,8 @@
 
 /// This module contains the ChatGPT client
 pub mod client;
+/// This module contains additional configuration for ChatGPT
+pub mod config;
 /// Conversation related types
 pub mod converse;
 /// This module contains the errors related to the API

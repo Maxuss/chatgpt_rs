@@ -10,6 +10,7 @@ use reqwest::{
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
 
@@ -17,11 +18,20 @@ use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, Ser
 #[derive(Debug, Clone)]
 pub struct ChatGPT {
     client: reqwest::Client,
+    pub config: ModelConfiguration,
 }
 
 impl ChatGPT {
-    /// Constructs a new ChatGPT API client with provided API Key
+    /// Constructs a new ChatGPT API client with provided API key and default configuration
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
+        Self::new_with_config(api_key, ModelConfiguration::default())
+    }
+
+    /// Constructs a new ChatGPT API client with provided API Key and Configuration
+    pub fn new_with_config<S: Into<String>>(
+        api_key: S,
+        config: ModelConfiguration,
+    ) -> crate::Result<Self> {
         let api_key = api_key.into();
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -31,7 +41,7 @@ impl ChatGPT {
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
             .build()?;
-        Ok(Self { client })
+        Ok(Self { client, config })
     }
 
     /// Restores a conversation from local conversation JSON file.
@@ -107,8 +117,14 @@ impl ChatGPT {
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
+                model: self.config.engine.as_ref(),
                 messages: history,
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
             })
             .send()
             .await?
@@ -135,11 +151,17 @@ impl ChatGPT {
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
+                model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
                 }],
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
             })
             .send()
             .await?
