@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use tokio::{fs::File, io::AsyncWriteExt};
-
 use crate::{
     client::ChatGPT,
     types::{ChatMessage, CompletionResponse, Role},
@@ -34,41 +32,19 @@ impl Conversation {
     /// Sends the message to the ChatGPT API and returns the completion response.
     ///
     /// Execution speed depends on API response times.
-    pub async fn send_message<S: Into<String>>(
+    pub fn send_message<S: Into<String>>(
         &mut self,
         message: S,
-    ) -> crate::Result<CompletionResponse> {
+    ) -> String {
         self.history.push(ChatMessage {
             role: Role::User,
             content: message.into(),
         });
-        let resp = self.client.send_history(&self.history).await?;
-        self.history.push(resp.message_choices[0].message.clone());
-        Ok(resp)
-    }
-
-    /// Saves the history to a local JSON file, that can be restored to a conversation at runtime later.
-    #[cfg(feature = "json")]
-    pub async fn save_history_json<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
-        let path = to.as_ref();
-        if path.exists() {
-            tokio::fs::remove_file(path).await?;
-        }
-        let mut file = File::create(path).await?;
-        file.write_all(&serde_json::to_vec(&self.history)?).await?;
-        Ok(())
-    }
-
-    /// Saves the history to a local postcard file, that can be restored to a conversation at runtime later.
-    #[cfg(feature = "postcard")]
-    pub async fn save_history_postcard<P: AsRef<Path>>(&self, to: P) -> crate::Result<()> {
-        let path = to.as_ref();
-        if path.exists() {
-            tokio::fs::remove_file(path).await?;
-        }
-        let mut file = File::create(path).await?;
-        file.write_all(&postcard::to_allocvec(&self.history)?)
-            .await?;
-        Ok(())
+        let resp = self.client.send_history(&self.history);
+        self.history.push(ChatMessage {
+            role: Role::User,
+            content: resp.clone(),
+        });
+        resp
     }
 }

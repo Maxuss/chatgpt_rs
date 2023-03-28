@@ -1,14 +1,12 @@
 use std::path::Path;
 use std::str::FromStr;
-
+use ureq::{Agent, AgentBuilder};
 use chrono::Local;
 use reqwest::header::AUTHORIZATION;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Url,
 };
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 
 use crate::converse::Conversation;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
@@ -16,66 +14,17 @@ use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, Ser
 /// The client that operates the ChatGPT API
 #[derive(Debug, Clone)]
 pub struct ChatGPT {
-    client: reqwest::Client,
+    client: ureq::Agent,
+    token: String,
 }
 
 impl ChatGPT {
     /// Constructs a new ChatGPT API client with provided API Key
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
         let api_key = api_key.into();
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            AUTHORIZATION,
-            HeaderValue::from_bytes(format!("Bearer {api_key}").as_bytes())?,
-        );
-        let client = reqwest::ClientBuilder::new()
-            .default_headers(headers)
-            .build()?;
-        Ok(Self { client })
-    }
-
-    /// Restores a conversation from local conversation JSON file.
-    /// The conversation file can originally be saved using the [`Conversation::save_history_json()`].
-    #[cfg(feature = "json")]
-    pub async fn restore_conversation_json<P: AsRef<Path>>(
-        &self,
-        file: P,
-    ) -> crate::Result<Conversation> {
-        let path = file.as_ref();
-        if !path.exists() {
-            return Err(crate::err::Error::ParsingError(
-                "Conversation history JSON file does not exist".to_string(),
-            ));
-        }
-        let mut file = File::open(path).await?;
-        let mut buf = String::new();
-        file.read_to_string(&mut buf).await?;
-        Ok(Conversation::new_with_history(
-            self.clone(),
-            serde_json::from_str(&buf)?,
-        ))
-    }
-
-    /// Restores a conversation from local conversation postcard file.
-    /// The conversation file can originally be saved using the [`Conversation::save_history_postcard()`].
-    #[cfg(feature = "postcard")]
-    pub async fn restore_conversation_postcard<P: AsRef<Path>>(
-        &self,
-        file: P,
-    ) -> crate::Result<Conversation> {
-        let path = file.as_ref();
-        if !path.exists() {
-            return Err(crate::err::Error::ParsingError(
-                "Conversation history Postcard file does not exist".to_string(),
-            ));
-        }
-        let mut file = File::open(path).await?;
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).await?;
-        Ok(Conversation::new_with_history(
-            self.clone(),
-            postcard::from_bytes(&buf)?,
-        ))
+        let token = format!("Bearer {api_key}");
+        let client = AgentBuilder::new().build();
+        Ok(Self { client, token})
     }
 
     /// Starts a new conversation with a default starting message.
@@ -96,61 +45,42 @@ impl ChatGPT {
     ///
     /// In most cases, if you would like to store message history, you should be looking at the [`Conversation`] struct, and
     /// [`Self::new_conversation()`] and [`Self::new_conversation_directed()`]
-    pub async fn send_history(
+    pub fn send_history(
         &self,
         history: &Vec<ChatMessage>,
-    ) -> crate::Result<CompletionResponse> {
-        let response: ServerResponse = self
+    ) -> String {
+        let response = self
             .client
-            .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
-            .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
-                messages: history,
-            })
-            .send()
-            .await?
-            .json()
-            .await?;
-        match response {
-            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
-                message: error.message,
-                error_type: error.error_type,
-            }),
-            ServerResponse::Completion(completion) => Ok(completion),
-        }
+            .post("https://api.openai.com/v1/chat/completions")
+            .set("Authorization", &self.token)
+            .send_json(ureq::json!({
+                "model": "gpt-3.5-turbo",
+                "rust": true,
+                "messages": history
+            }))
+            .unwrap()
+            .into_string();
+        response.unwrap_or_default()
     }
 
     /// Sends a single message to the API without preserving message history.
-    pub async fn send_message<S: Into<String>>(
+    pub fn send_message<S: Into<String>>(
         &self,
         message: S,
-    ) -> crate::Result<CompletionResponse> {
-        let response: ServerResponse = self
+    ) -> Result<CompletionResponse, ureq::Error> {
+        let response: CompletionResponse = self
             .client
-            .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
-            .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
-                messages: &vec![ChatMessage {
+            .post("https://api.openai.com/v1/chat/completions")
+            .set("Authorization", &self.token)
+            .send_json(ureq::json!({
+                "model": "gpt-3.5-turbo",
+                "messages": &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
                 }],
-            })
-            .send()
-            .await?
-            .json()
-            .await?;
-        match response {
-            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
-                message: error.message,
-                error_type: error.error_type,
-            }),
-            ServerResponse::Completion(completion) => Ok(completion),
-        }
+            }))
+            .unwrap()
+            .into_json()?;
+        Ok(response)
     }
 }

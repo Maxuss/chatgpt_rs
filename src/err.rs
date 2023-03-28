@@ -34,9 +34,6 @@ pub enum Error {
         /// The type of error
         error_type: String,
     },
-    /// A Tokio IO error happened
-    #[error("Error happened during an IO operation: {0}")]
-    IOError(#[from] tokio::io::Error),
     /// Most likely env var not provided
     #[error("Error while trying to access an environment variable: {0}")]
     VarError(#[from] VarError),
