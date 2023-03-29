@@ -16,7 +16,7 @@ path = "./src/chatgpt.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11.13", features = ["json", "stream"] }
+reqwest = { version = "0.11.13", features = ["json"] }
 tokio = { version = "1.26.0", features = ["macros"] }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0.93", optional = true }
@@ -34,7 +34,7 @@ futures-util = { version = "0.3.26", optional = true }
 tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
 
 [features]
-default = ["json", "streams"]
+default = ["json"]
 streams = [
     "dep:eventsource-stream",
     "dep:futures-util",

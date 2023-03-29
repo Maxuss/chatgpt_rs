@@ -2,9 +2,6 @@ use std::path::Path;
 use std::str::FromStr;
 
 use chrono::Local;
-use eventsource_stream::Eventsource;
-use futures_util::Stream;
-use futures_util::StreamExt;
 use reqwest::header::AUTHORIZATION;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
@@ -12,12 +9,14 @@ use reqwest::{
 };
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+#[cfg(feature = "streams")]
+use {
+    crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
+    crate::types::ResponseChunk, futures_util::Stream,
+};
 
 use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
-use crate::types::InboundChunkPayload;
-use crate::types::InboundResponseChunk;
-use crate::types::ResponseChunk;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
 
 /// The client that operates the ChatGPT API
@@ -150,10 +149,16 @@ impl ChatGPT {
     ///
     /// In most cases, if you would like to store message history, you should be looking at the [`Conversation`] struct, and
     /// [`Self::new_conversation()`] and [`Self::new_conversation_directed()`]
+    ///
+    /// Requires the `streams` crate feature
+    #[cfg(feature = "streams")]
     pub async fn send_history_streaming(
         &self,
         history: &Vec<ChatMessage>,
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use eventsource_stream::Eventsource;
+        use futures_util::StreamExt;
+
         let response_stream = self
             .client
             .post(
@@ -236,10 +241,15 @@ impl ChatGPT {
     }
 
     /// Sends a single message to the API, and returns the response as stream, without preserving message history.
+    ///
+    /// Requires the `streams` crate feature
+    #[cfg(feature = "streams")]
     pub async fn send_message_streaming<S: Into<String>>(
         &self,
         message: S,
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use eventsource_stream::Eventsource;
+        use futures_util::StreamExt;
         let response_stream = self
             .client
             .post(

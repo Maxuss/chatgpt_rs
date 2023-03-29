@@ -95,7 +95,10 @@ pub mod test {
     async fn test_some_config() -> crate::Result<()> {
         let client = ChatGPT::new_with_config(
             std::env::var("TEST_API_KEY")?,
-            ModelConfiguration::default().temperature(0.9).reply_count(3).build()
+            ModelConfiguration::default()
+                .temperature(0.9)
+                .reply_count(3)
+                .build(),
         )?;
         let response = client
             .send_message("Could you give me names of three popular Rust web frameworks?")

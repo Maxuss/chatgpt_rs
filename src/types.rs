@@ -26,6 +26,7 @@ pub struct ChatMessage {
 
 impl ChatMessage {
     /// Converts multiple response chunks into multiple (or a single) chat messages
+    #[cfg(feature = "streams")]
     pub fn from_response_chunks(chunks: Vec<ResponseChunk>) -> Vec<Self> {
         let mut result: Vec<Self> = Vec::new();
         for chunk in chunks {
@@ -152,6 +153,7 @@ pub struct TokenUsage {
 
 /// A single response chunk, returned from streamed request
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[cfg(feature = "streams")]
 pub enum ResponseChunk {
     /// A chunk of message content
     Content {
@@ -178,6 +180,7 @@ pub enum ResponseChunk {
 
 /// A part of a chunked inbound response
 #[derive(Debug, Clone, Deserialize)]
+#[cfg(feature = "streams")]
 pub struct InboundResponseChunk {
     /// All message chunks in this response part (only one usually)
     pub choices: Vec<InboundChunkChoice>,
@@ -185,6 +188,7 @@ pub struct InboundResponseChunk {
 
 /// A single message part of a chunked inbound response
 #[derive(Debug, Clone, Deserialize)]
+#[cfg(feature = "streams")]
 pub struct InboundChunkChoice {
     /// The part value of the response
     pub delta: InboundChunkPayload,
@@ -195,6 +199,7 @@ pub struct InboundChunkChoice {
 /// Contains different chunked inbound response payloads
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
+#[cfg(feature = "streams")]
 pub enum InboundChunkPayload {
     /// Begins a single message by announcing roles (usually `assistant`)
     AnnounceRoles {

@@ -1,11 +1,13 @@
 use std::path::Path;
 
-use futures::Stream;
 use tokio::{fs::File, io::AsyncWriteExt};
+
+#[cfg(feature = "streams")]
+use {crate::types::ResponseChunk, futures::Stream};
 
 use crate::{
     client::ChatGPT,
-    types::{ChatMessage, CompletionResponse, ResponseChunk, Role},
+    types::{ChatMessage, CompletionResponse, Role},
 };
 
 /// Stores a single conversation session, and automatically saves message history
@@ -61,6 +63,9 @@ impl Conversation {
     /// it is returned in streamed chunks. You will have to collect them into chat message yourself.
     ///
     /// You can use [`ChatMessage::from_response_chunks`] for this
+    ///
+    /// Requires the `streams` crate feature.
+    #[cfg(feature = "streams")]
     pub async fn send_message_streaming<S: Into<String>>(
         &mut self,
         message: S,
