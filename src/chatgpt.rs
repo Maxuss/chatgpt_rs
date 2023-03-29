@@ -19,7 +19,7 @@ pub type Result<T> = std::result::Result<T, err::Error>;
 
 #[cfg(test)]
 pub mod test {
-    use std::{fs::File, path::Path};
+    use std::path::Path;
 
     use futures::StreamExt;
 
@@ -70,8 +70,8 @@ pub mod test {
         let mut conv = client.new_conversation_directed(
             "You are TestGPT, an AI model developed in Rust in year 2023.",
         );
-        let resp_a = conv.send_message("Could you tell me who you are?").await?;
-        let resp_b = conv
+        let _resp_a = conv.send_message("Could you tell me who you are?").await?;
+        let _resp_b = conv
             .send_message("What did I ask you about in my first question?")
             .await?;
         conv.save_history_json("history.json").await?;
@@ -95,10 +95,7 @@ pub mod test {
     async fn test_some_config() -> crate::Result<()> {
         let client = ChatGPT::new_with_config(
             std::env::var("TEST_API_KEY")?,
-            ModelConfiguration::default()
-                .with_temperature(0.9)
-                .with_engine(ChatGPTEngine::Gpt35Turbo_0301)
-                .with_reply_count(3),
+            ModelConfiguration::default().temperature(0.9).reply_count(3).build()
         )?;
         let response = client
             .send_message("Could you give me names of three popular Rust web frameworks?")

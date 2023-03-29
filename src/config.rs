@@ -1,13 +1,25 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+use derive_builder::Builder;
+
+/// The struct containing main configuration for the ChatGPT API
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Builder)]
+#[builder(default, setter(into), pattern = "owned")]
 pub struct ModelConfiguration {
+    /// The GPT version used.
     pub engine: ChatGPTEngine,
+    /// Controls randomness of the output. Higher valeus means more random
     pub temperature: f32,
+    /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
+    /// Determines how much to penalize new tokens pased on their existing presence so far
     pub presence_penalty: f32,
+    /// Determines how much to penalize new tokens based on their existing frequency so far
     pub frequency_penalty: f32,
+    /// The maximum amount of replies
     pub reply_count: u32,
+    /// URL of the /v1/chat/completions endpoint. Can be used to set a proxy
+    pub api_url: &'static str,
 }
 
 impl Default for ModelConfiguration {
@@ -19,51 +31,29 @@ impl Default for ModelConfiguration {
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
+            api_url: "https://api.openai.com/v1/chat/completions"
         }
     }
 }
 
-impl ModelConfiguration {
-    pub fn with_engine(mut self, engine: ChatGPTEngine) -> Self {
-        self.engine = engine;
-        self
-    }
-
-    pub fn with_temperature(mut self, temperature: f32) -> Self {
-        self.temperature = temperature;
-        self
-    }
-
-    pub fn with_top_p(mut self, top_p: f32) -> Self {
-        self.top_p = top_p;
-        self
-    }
-
-    pub fn with_presence_penalty(mut self, presence_penalty: f32) -> Self {
-        self.presence_penalty = presence_penalty;
-        self
-    }
-
-    pub fn with_frequency_penalty(mut self, frequency_penalty: f32) -> Self {
-        self.frequency_penalty = frequency_penalty;
-        self
-    }
-
-    pub fn with_reply_count(mut self, reply_count: u32) -> Self {
-        self.reply_count = reply_count;
-        self
-    }
-}
-
+/// The engine version for ChatGPT
 #[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
+#[allow(non_camel_case_types)]
 pub enum ChatGPTEngine {
+    /// Standard engine: `gpt-3.5-turbo`
     #[default]
     Gpt35Turbo,
+    /// Different version of standard engine: `gpt-3.5-turbo-0301`
     Gpt35Turbo_0301,
+    /// Base GPT-4 model: `gpt-4`
     Gpt4,
+    /// Version of GPT-4, able to remember 32,000 tokens: `gpt-4-32k`
     Gpt4_32k,
+    /// Different version of GPT-4: `gpt-4-0314`
     Gpt4_0314,
+    /// Different version of GPT-4, able to remember 32,000 tokens: `gpt-4-32k-0314`
     Gpt4_32k_0314,
+    /// Custom (or new/unimplemented) version of ChatGPT
     Custom(&'static str),
 }
 

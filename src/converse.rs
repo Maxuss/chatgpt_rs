@@ -32,8 +32,11 @@ impl Conversation {
         Self { client, history }
     }
 
+    /// Rollbacks the history by 1 message, removing the last sent and received message.
     pub fn rollback(&mut self) -> Option<ChatMessage> {
-        self.history.pop()
+        let last = self.history.pop();
+        self.history.pop();
+        last
     }
 
     /// Sends the message to the ChatGPT API and returns the completion response.
@@ -52,6 +55,12 @@ impl Conversation {
         Ok(resp)
     }
 
+    /// Sends the message to the ChatGPT API and returns the completion response as stream.
+    ///
+    /// Note, that this method will not automatically save the received message to history, as
+    /// it is returned in streamed chunks. You will have to collect them into chat message yourself.
+    ///
+    /// You can use [`ChatMessage::from_response_chunks`] for this
     pub async fn send_message_streaming<S: Into<String>>(
         &mut self,
         message: S,

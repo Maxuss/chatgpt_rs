@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// A role of a message sender, can be:
@@ -23,6 +22,38 @@ pub struct ChatMessage {
     pub role: Role,
     /// Actual content of the message
     pub content: String,
+}
+
+impl ChatMessage {
+    /// Converts multiple response chunks into multiple (or a single) chat messages
+    pub fn from_response_chunks(chunks: Vec<ResponseChunk>) -> Vec<Self> {
+        let mut result: Vec<Self> = Vec::new();
+        for chunk in chunks {
+            match chunk {
+                ResponseChunk::Content {
+                    delta,
+                    response_index,
+                } => {
+                    let msg = result
+                        .get_mut(response_index)
+                        .expect("Invalid response chunk sequence!");
+                    msg.content.push_str(&delta);
+                }
+                ResponseChunk::BeginResponse {
+                    role,
+                    response_index: _,
+                } => {
+                    let msg = ChatMessage {
+                        role,
+                        content: String::new(),
+                    };
+                    result.push(msg);
+                }
+                _ => {}
+            }
+        }
+        result
+    }
 }
 
 /// A request struct sent to the API to request a message completion
@@ -119,37 +150,62 @@ pub struct TokenUsage {
     pub total_tokens: u32,
 }
 
+/// A single response chunk, returned from streamed request
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub enum ResponseChunk {
+    /// A chunk of message content
     Content {
+        /// Piece of message content
         delta: String,
+        /// Index of the message. Used when `reply_count` is set to more than 1 in API config
         response_index: usize,
     },
+    /// Marks beginning of a new message response, with no actual content yet
     BeginResponse {
+        /// The respondent's role (usually `Assistant`)
         role: Role,
+        /// Index of the message. Used when `reply_count` is set to more than 1 in API config
         response_index: usize,
     },
+    /// Ends a single message response response
     CloseResponse {
+        /// Index of the message finished. Used when `reply_count` is set to more than 1 in API config
         response_index: usize,
     },
+    /// Marks end of stream
     Done,
 }
 
+/// A part of a chunked inbound response
 #[derive(Debug, Clone, Deserialize)]
 pub struct InboundResponseChunk {
+    /// All message chunks in this response part (only one usually)
     pub choices: Vec<InboundChunkChoice>,
 }
 
+/// A single message part of a chunked inbound response
 #[derive(Debug, Clone, Deserialize)]
 pub struct InboundChunkChoice {
+    /// The part value of the response
     pub delta: InboundChunkPayload,
+    /// Index of the message this chunk refers to
     pub index: usize,
 }
 
+/// Contains different chunked inbound response payloads
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum InboundChunkPayload {
-    AnnounceRoles { role: Role },
-    StreamContent { content: String },
+    /// Begins a single message by announcing roles (usually `assistant`)
+    AnnounceRoles {
+        /// The announced role
+        role: Role,
+    },
+    /// Streams a part of message content
+    StreamContent {
+        /// The part of content
+        content: String,
+    },
+    /// Closes a single message
     Close {},
 }
