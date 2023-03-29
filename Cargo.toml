@@ -34,7 +34,7 @@ futures-util = { version = "0.3.26", optional = true }
 tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
 
 [features]
-default = ["json"]
+default = ["json", "streams"]
 streams = [
     "dep:eventsource-stream",
     "dep:futures-util",
