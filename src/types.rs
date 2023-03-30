@@ -15,6 +15,7 @@ pub enum Role {
     User,
 }
 
+/// ResponseEnum that can contain the old response and the new response
 #[derive(Debug, Clone, Deserialize)]
 pub enum ResponseType {
     Old(OldCompletionResponse),
@@ -84,6 +85,7 @@ pub struct CompletionRequest<'a> {
     pub reply_count: u32,
 }
 
+/// Request for gpt3
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize)]
 pub struct OldCompletionRequest<'a> {
     /// The model to be used, currently `gpt-3.5-turbo`, but may change in future
@@ -122,11 +124,12 @@ pub enum ServerResponse {
     },
     /// Completion successfuly completed
     Completion(CompletionResponse),
+    /// Old completion successfuly completed
     OldCompletion(OldCompletionResponse),
 }
 
 /// An error happened while requesting completion
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
 pub struct CompletionError {
     /// Message, describing the error
     pub message: String,
@@ -160,16 +163,49 @@ impl CompletionResponse {
         // Unwrap is safe here, as we know that at least one message choice is provided
         &self.message_choices.first().unwrap().message
     }
+
+    /// OldCompletionResponse struct to Completion Response
+    pub fn from_old(old: OldCompletionResponse) -> Self {
+        let message_choices:Vec<MessageChoice> = old.message_choices.into_iter().map(|choice| MessageChoice {
+            message: ChatMessage {
+                role: Role::System,
+                content: choice.text,
+            },
+            finish_reason: choice.finish_reason,
+            index: choice.index,
+        }).collect();
+        Self {
+            message_id: Some(old.message_id),
+            created_timestamp: Some(old.created_timestamp),
+            model: old.model,
+            usage: TokenUsage {
+                prompt_tokens: old.usage.prompt_tokens,
+                completion_tokens: 0,
+                total_tokens: old.usage.total_tokens,
+            },
+            message_choices,
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+/// A response struct received from the API after requesting a message completion
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
 pub struct OldCompletionResponse {
-    pub id: String,
+    /// Unique ID of the message, but not in a UUID format.
+    /// Example: `chatcmpl-6p5FEv1JHictSSnDZsGU4KvbuBsbu`
+    #[serde(rename = "id")]
+    pub message_id: String,
+    /// The model that was used for this completion
+    #[serde(rename = "created")]
+    pub created_timestamp: u64,
     pub object: String,
-    pub created: u64,
+    /// The model that was used for this completion
     pub model: String,
-    pub choices: Vec<MessageChoiceOld>,
+    /// Token usage of this completion
     pub usage: OldTokenUsage,
+    /// Message choices for this response, guaranteed to contain at least one message response
+    #[serde(rename = "choices")]
+    pub message_choices: Vec<MessageChoiceOld>,
 }
 
 /// A message completion choice struct
@@ -183,7 +219,8 @@ pub struct MessageChoice {
     pub index: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+/// A message completion choice struct
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
 pub struct MessageChoiceOld {
     /// The actual message
     pub text: String,
@@ -194,8 +231,8 @@ pub struct MessageChoiceOld {
     pub finish_reason: String,
 }
 
-
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+/// The token usage of a specific response
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
 pub struct OldTokenUsage {
     /// Tokens spent on the prompt message (including previous messages)
     pub prompt_tokens: u32,
@@ -204,7 +241,7 @@ pub struct OldTokenUsage {
 }
 
 /// The token usage of a specific response
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
 pub struct TokenUsage {
     /// Tokens spent on the prompt message (including previous messages)
     pub prompt_tokens: u32,

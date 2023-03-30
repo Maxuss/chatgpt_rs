@@ -17,12 +17,14 @@ use {
 
 use crate::config::{ModelConfiguration, OldModelConfiguration};
 use crate::converse::Conversation;
-use crate::prelude::TokenUsage;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, MessageChoice, OldCompletionRequest, ResponseType, Role, ServerResponse};
 
+/// Enum that can hold old and new Configuration
 #[derive(Debug, Clone)]
 pub enum ConfigType {
+    /// gpt3 config
     Old(OldModelConfiguration),
+    /// gpt3.5,gpt4 config
     New(ModelConfiguration),
 }
 /// The client that operates the ChatGPT API
@@ -38,6 +40,8 @@ impl ChatGPT {
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
         Self::new_with_config(api_key, ModelConfiguration::default())
     }
+
+    /// Constructs a new ChatGPT API client with provided API key and default configuration for gpt3
 
     pub fn oldnew<S: Into<String>>(api_key: S) -> crate::Result<Self> {
         Self::new_with_old_config(api_key, OldModelConfiguration::default())
@@ -60,6 +64,7 @@ impl ChatGPT {
         Ok(Self { client, config: ConfigType::New(config) })
     }
 
+    /// Constructs a new ChatGPT API client with provided API Key and Configuration for gpt 3
     pub fn new_with_old_config<S: Into<String>>(
         api_key: S,
         config: OldModelConfiguration,
@@ -193,21 +198,26 @@ impl ChatGPT {
         use eventsource_stream::Eventsource;
         use futures_util::StreamExt;
 
+        let config = match &self.config {
+            ConfigType::Old(_) => Err(crate::err::Error::ParsingError("Function only available for newer models".to_string())),
+            ConfigType::New(v) => Ok(v)
+        }?;
+
         let response_stream = self
             .client
             .post(
-                Url::from_str(self.config.api_url)
+                Url::from_str(config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: self.config.engine.as_ref(),
+                model: config.engine.as_ref(),
                 stream: true,
                 messages: history,
-                temperature: self.config.temperature,
-                top_p: self.config.top_p,
-                frequency_penalty: self.config.frequency_penalty,
-                presence_penalty: self.config.presence_penalty,
-                reply_count: self.config.reply_count,
+                temperature: config.temperature,
+                top_p: config.top_p,
+                frequency_penalty: config.frequency_penalty,
+                presence_penalty: config.presence_penalty,
+                reply_count: config.reply_count,
             })
             .send()
             .await?
@@ -237,6 +247,16 @@ impl ChatGPT {
         }))
     }
 
+    /// calls send_message, but formats to CompletionResponse
+    pub async fn send_message_formatted<S: Into<String>>(
+        &self,
+        message: S,
+    ) -> crate::Result<CompletionResponse> {
+        match self.send_message(message).await? {
+            ResponseType::Old(response) => Ok(CompletionResponse::from_old(response)),
+            ResponseType::New(response) => Ok(response),
+        }
+    }
     /// Sends a single message to the API without preserving message history.
     pub async fn send_message<S: Into<String>>(
         &self,
@@ -303,24 +323,29 @@ impl ChatGPT {
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
         use eventsource_stream::Eventsource;
         use futures_util::StreamExt;
+
+        let config = match &self.config {
+            ConfigType::Old(_) => Err(crate::err::Error::ParsingError("Function only available for newer models".to_string())),
+            ConfigType::New(v) => Ok(v)
+        }?;
         let response_stream = self
             .client
             .post(
-                Url::from_str(self.config.api_url)
+                Url::from_str(config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: self.config.engine.as_ref(),
+                model: config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
                 }],
                 stream: true,
-                temperature: self.config.temperature,
-                top_p: self.config.top_p,
-                frequency_penalty: self.config.frequency_penalty,
-                presence_penalty: self.config.presence_penalty,
-                reply_count: self.config.reply_count,
+                temperature: config.temperature,
+                top_p: config.top_p,
+                frequency_penalty: config.frequency_penalty,
+                presence_penalty: config.presence_penalty,
+                reply_count: config.reply_count,
             })
             .send()
             .await?
