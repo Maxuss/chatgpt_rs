@@ -2,8 +2,7 @@ use std::env::args;
 
 use chatgpt::prelude::*;
 
-/// Requires the `postcard` feature!
-#[cfg(feature = "postcard")]
+/// Requires the `postcard` crate feature
 #[tokio::main]
 async fn main() -> Result<()> {
     // Creating a client

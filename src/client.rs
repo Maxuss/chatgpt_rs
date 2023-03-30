@@ -9,7 +9,13 @@ use reqwest::{
 };
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+#[cfg(feature = "streams")]
+use {
+    crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
+    crate::types::ResponseChunk, futures_util::Stream,
+};
 
+use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
 
@@ -17,11 +23,21 @@ use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, Ser
 #[derive(Debug, Clone)]
 pub struct ChatGPT {
     client: reqwest::Client,
+    /// The configuration for this ChatGPT client
+    pub config: ModelConfiguration,
 }
 
 impl ChatGPT {
-    /// Constructs a new ChatGPT API client with provided API Key
+    /// Constructs a new ChatGPT API client with provided API key and default configuration
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
+        Self::new_with_config(api_key, ModelConfiguration::default())
+    }
+
+    /// Constructs a new ChatGPT API client with provided API Key and Configuration
+    pub fn new_with_config<S: Into<String>>(
+        api_key: S,
+        config: ModelConfiguration,
+    ) -> crate::Result<Self> {
         let api_key = api_key.into();
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -31,7 +47,7 @@ impl ChatGPT {
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
             .build()?;
-        Ok(Self { client })
+        Ok(Self { client, config })
     }
 
     /// Restores a conversation from local conversation JSON file.
@@ -103,12 +119,18 @@ impl ChatGPT {
         let response: ServerResponse = self
             .client
             .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
+                Url::from_str(self.config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
+                model: self.config.engine.as_ref(),
                 messages: history,
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
             })
             .send()
             .await?
@@ -123,6 +145,64 @@ impl ChatGPT {
         }
     }
 
+    /// Explicitly sends whole message history to the API and returns the response as stream.
+    ///
+    /// In most cases, if you would like to store message history, you should be looking at the [`Conversation`] struct, and
+    /// [`Self::new_conversation()`] and [`Self::new_conversation_directed()`]
+    ///
+    /// Requires the `streams` crate feature
+    #[cfg(feature = "streams")]
+    pub async fn send_history_streaming(
+        &self,
+        history: &Vec<ChatMessage>,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use eventsource_stream::Eventsource;
+        use futures_util::StreamExt;
+
+        let response_stream = self
+            .client
+            .post(
+                Url::from_str(self.config.api_url)
+                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+            )
+            .json(&CompletionRequest {
+                model: self.config.engine.as_ref(),
+                stream: true,
+                messages: history,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
+            })
+            .send()
+            .await?
+            .bytes_stream()
+            .eventsource();
+        Ok(response_stream.map(move |part| {
+            let chunk = &part.expect("Stream closed abruptly!").data;
+            if chunk == "[DONE]" {
+                return ResponseChunk::Done;
+            }
+            let data: InboundResponseChunk =
+                serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
+            let choice = data.choices[0].to_owned();
+            match choice.delta {
+                InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
+                    role,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
+                    delta: content,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
+                    response_index: choice.index,
+                },
+            }
+        }))
+    }
+
     /// Sends a single message to the API without preserving message history.
     pub async fn send_message<S: Into<String>>(
         &self,
@@ -131,15 +211,21 @@ impl ChatGPT {
         let response: ServerResponse = self
             .client
             .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
+                Url::from_str(self.config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: "gpt-3.5-turbo",
+                model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
                 }],
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
             })
             .send()
             .await?
@@ -152,5 +238,62 @@ impl ChatGPT {
             }),
             ServerResponse::Completion(completion) => Ok(completion),
         }
+    }
+
+    /// Sends a single message to the API, and returns the response as stream, without preserving message history.
+    ///
+    /// Requires the `streams` crate feature
+    #[cfg(feature = "streams")]
+    pub async fn send_message_streaming<S: Into<String>>(
+        &self,
+        message: S,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use eventsource_stream::Eventsource;
+        use futures_util::StreamExt;
+        let response_stream = self
+            .client
+            .post(
+                Url::from_str(self.config.api_url)
+                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+            )
+            .json(&CompletionRequest {
+                model: self.config.engine.as_ref(),
+                messages: &vec![ChatMessage {
+                    role: Role::User,
+                    content: message.into(),
+                }],
+                stream: true,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
+            })
+            .send()
+            .await?
+            .bytes_stream()
+            .eventsource();
+        Ok(response_stream.map(move |part| {
+            let chunk = &part.expect("Stream closed abruptly!").data;
+            if chunk == "[DONE]" {
+                return ResponseChunk::Done;
+            }
+            let data: InboundResponseChunk =
+                serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
+            let choice = data.choices[0].to_owned();
+            match choice.delta {
+                InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
+                    role,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
+                    delta: content,
+                    response_index: choice.index,
+                },
+                InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
+                    response_index: choice.index,
+                },
+            }
+        }))
     }
 }
