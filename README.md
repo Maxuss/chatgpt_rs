@@ -4,7 +4,7 @@ This library has now been rewritten to use official OpenAI's ChatGPT API, instea
 
 ## ⚠️ Important ⚠️
 If you have previously used this library, older versions (0.6.0 and below) are deprecated, unsupported, and *will* produce errors. 
-You should use the latest version, which is `1.0.0`.
+You should use the latest version, which is `1.1.0`.
 
 ## Usage
 
@@ -35,6 +35,44 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+## Streaming Responses
+
+If you wish to gradually build the response message, you may use the `streams` feature (not enabled by default)
+of the crate, and special methods to request streamed responses.
+
+Here is an example:
+
+```rs
+// Acquiring a streamed response
+// Note, that the `futures_util` crate is required for most
+// stream related utility methods
+let stream = client
+    .send_message_streaming("Could you name me a few popular Rust backend server frameworks?")
+    .await?;
+
+// Iterating over stream contents
+stream
+    .for_each(|each| async move {
+        match each {
+            ResponseChunk::Content {
+                delta,
+                response_index: _,
+            } => {
+                // Printing part of response without the newline
+                print!("{delta}");
+                // Manually flushing the standard output, as `print` macro does not do that
+                stdout().lock().flush().unwrap();
+            }
+            _ => {}
+        }
+    })
+    .await;
+}
+
+```
+
+Note that the returned streams normally don't have any utility methods, so you will have to use a `StreamExt` method from your async library of choice (e.g. `futures-util` or `tokio`).
 
 ## Conversations
 
@@ -69,6 +107,49 @@ However, you can specify the introductory message yourself this way:
 ```rust
 let mut conversation: Conversation = client.new_conversation_directed("You are RustGPT, when answering any questions, you always shift the topic of the conversation to the Rust programming language.");
 // Continue with the new conversation
+```
+
+### Conversation Streaming
+
+Conversations also support returning streamed responses (with the `streams` feature). 
+
+**NOTE:** Streamed responses *do not* automatically save returned message to history, so you will have to do it manually by yourself.
+
+Here is an example:
+
+```rs
+// Acquiring a streamed response
+// Note, that the `futures_util` crate is required for most
+// stream related utility methods
+let mut stream = conversation
+    .send_message_streaming("Could you name me a few popular Rust backend server frameworks?")
+    .await?;
+
+    // Iterating over a stream and collecting the results into a vector
+let mut output: Vec<ResponseChunk> = Vec::new();
+while let Some(chunk) = stream.next().await {
+    match chunk {
+        ResponseChunk::Content {
+            delta,
+            response_index,
+        } => {
+            // Printing part of response without the newline
+            print!("{delta}");
+            // Manually flushing the standard output, as `print` macro does not do that
+            stdout().lock().flush().unwrap();
+            output.push(ResponseChunk::Content {
+                delta,
+                response_index,
+            });
+        }
+        // We don't really care about other types, other than parsing them into a ChatMessage later
+        other => output.push(other),
+    }
+}
+
+// Parsing ChatMessage from the response chunks and saving it to the conversation history
+let messages = ChatMessage::from_response_chunks(output);
+conversation.history.push(messages[0].to_owned());
 ```
 
 ## Conversation Persistence

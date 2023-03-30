@@ -4,7 +4,7 @@ use chatgpt::prelude::*;
 use futures_util::StreamExt;
 use std::io::{stdout, Write};
 
-#[cfg(feature = "streams")]
+/// Requires the `streams` crate feature
 #[tokio::main]
 async fn main() -> Result<()> {
     // Creating a client
