@@ -108,10 +108,10 @@ pub struct CompletionResponse {
     /// Unique ID of the message, but not in a UUID format.
     /// Example: `chatcmpl-6p5FEv1JHictSSnDZsGU4KvbuBsbu`
     #[serde(rename = "id")]
-    pub message_id: String,
+    pub message_id: Option<String>,
     /// Unix seconds timestamp of when the response was created
     #[serde(rename = "created")]
-    pub created_timestamp: u64,
+    pub created_timestamp: Option<u64>,
     /// The model that was used for this completion
     pub model: String,
     /// Token usage of this completion

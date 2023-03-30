@@ -162,7 +162,7 @@ impl ChatGPT {
         let response_stream = self
             .client
             .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
+                Url::from_str(self.config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
@@ -211,7 +211,7 @@ impl ChatGPT {
         let response: ServerResponse = self
             .client
             .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
+                Url::from_str(self.config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
@@ -253,7 +253,7 @@ impl ChatGPT {
         let response_stream = self
             .client
             .post(
-                Url::from_str("https://api.openai.com/v1/chat/completions")
+                Url::from_str(self.config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {

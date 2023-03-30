@@ -4,7 +4,7 @@ use derive_builder::Builder;
 
 /// The struct containing main configuration for the ChatGPT API
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Builder)]
-#[builder(default, setter(into), pattern = "owned")]
+#[builder(default, setter(into))]
 pub struct ModelConfiguration {
     /// The GPT version used.
     pub engine: ChatGPTEngine,
@@ -31,7 +31,7 @@ impl Default for ModelConfiguration {
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
-            api_url: "https://api.openai.com/v1/chat/completions"
+            api_url: "https://api.openai.com/v1/chat/completions",
         }
     }
 }

@@ -196,3 +196,25 @@ let mut restored = client
     .restore_conversation_postcard("my-conversation.bin")
     .await?;
 ```
+
+## Advanced configuration
+
+You can configure your model further with `ModelConfigurationBuilder`, which also
+allows to use proxies:
+
+```rs
+// Getting the API key here
+let key = args().nth(1).unwrap();
+
+// Creating a new ChatGPT client with extra settings.
+// Note that it might not require an API key depending on proxy
+let client = ChatGPT::new_with_config(
+    key,
+    ModelConfigurationBuilder::default()
+        .api_url("https://api.pawan.krd/v1/chat/completions")
+        .temperature(1.0)
+        .engine(ChatGPTEngine::Gpt4_32k)
+        .build()
+        .unwrap(),
+)?;
+```

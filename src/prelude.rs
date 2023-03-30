@@ -1,5 +1,5 @@
 pub use crate::client::ChatGPT;
-pub use crate::config::ModelConfiguration;
+pub use crate::config::{ChatGPTEngine, ModelConfiguration, ModelConfigurationBuilder};
 pub use crate::converse::Conversation;
 #[cfg(feature = "streams")]
 pub use crate::types::ResponseChunk;
