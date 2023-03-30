@@ -17,7 +17,8 @@ use {
 
 use crate::config::{ModelConfiguration, OldModelConfiguration};
 use crate::converse::Conversation;
-use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, OldCompletionRequest, Role, ServerResponse};
+use crate::prelude::TokenUsage;
+use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, MessageChoice, OldCompletionRequest, ResponseType, Role, ServerResponse};
 
 #[derive(Debug, Clone)]
 pub enum ConfigType {
@@ -142,7 +143,7 @@ impl ChatGPT {
         history: &Vec<ChatMessage>,
     ) -> crate::Result<CompletionResponse> {
         let config = match &self.config {
-            ConfigType::Old(v) => Err(crate::err::Error::ParsingError("Function only available for newer models".to_string())),
+            ConfigType::Old(_) => Err(crate::err::Error::ParsingError("Function only available for newer models".to_string())),
             ConfigType::New(v) => Ok(v)
         }?;
         let response: ServerResponse = self
@@ -171,6 +172,10 @@ impl ChatGPT {
                 error_type: error.error_type,
             }),
             ServerResponse::Completion(completion) => Ok(completion),
+            ServerResponse::OldCompletion(_) => Err(crate::err::Error::BackendError {
+                message: "unreachable".to_string(),
+                error_type: "unreachable".to_string(),
+            }),
         }
     }
 
@@ -236,8 +241,8 @@ impl ChatGPT {
     pub async fn send_message<S: Into<String>>(
         &self,
         message: S,
-    ) -> crate::Result<CompletionResponse> {
-        let response = match &self.config {
+    ) -> crate::Result<ResponseType> {
+        let response: ServerResponse = match &self.config {
             ConfigType::Old(v) => self
                 .client
                 .post(
@@ -283,7 +288,8 @@ impl ChatGPT {
                 message: error.message,
                 error_type: error.error_type,
             }),
-            ServerResponse::Completion(completion) => Ok(completion),
+            ServerResponse::Completion(completion) => Ok(ResponseType::New(completion)),
+            ServerResponse::OldCompletion(completion) => Ok(ResponseType::Old(completion)),
         }
     }
 

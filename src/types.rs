@@ -15,6 +15,11 @@ pub enum Role {
     User,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub enum ResponseType {
+    Old(OldCompletionResponse),
+    New(CompletionResponse)
+}
 /// Container for the sent/received ChatGPT messages
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct ChatMessage {
@@ -117,6 +122,7 @@ pub enum ServerResponse {
     },
     /// Completion successfuly completed
     Completion(CompletionResponse),
+    OldCompletion(OldCompletionResponse),
 }
 
 /// An error happened while requesting completion
@@ -156,6 +162,16 @@ impl CompletionResponse {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct OldCompletionResponse {
+    pub id: String,
+    pub object: String,
+    pub created: u64,
+    pub model: String,
+    pub choices: Vec<MessageChoiceOld>,
+    pub usage: OldTokenUsage,
+}
+
 /// A message completion choice struct
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 pub struct MessageChoice {
@@ -165,6 +181,26 @@ pub struct MessageChoice {
     pub finish_reason: String,
     /// The index of this message in the outer `message_choices` array
     pub index: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct MessageChoiceOld {
+    /// The actual message
+    pub text: String,
+    /// The index of this message in the outer `message_choices` array
+    pub index: u32,
+    pub logprobs: Option<i32>,
+    /// The reason completion was stopped
+    pub finish_reason: String,
+}
+
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+pub struct OldTokenUsage {
+    /// Tokens spent on the prompt message (including previous messages)
+    pub prompt_tokens: u32,
+    /// Total amount of tokens used (`prompt_tokens + completion_tokens`)
+    pub total_tokens: u32,
 }
 
 /// The token usage of a specific response

@@ -35,7 +35,10 @@ pub mod test {
         let resp = client
             .send_message("Write me a short pun about the Rust language.")
             .await?;
-        assert!(!resp.message_choices.is_empty());
+        match resp {
+            ResponseType::New(_) => assert!(true),
+            _ => assert!(false),
+        };
         Ok(())
     }
 
@@ -45,7 +48,10 @@ pub mod test {
         let resp = client
             .send_message("Write me a short pun about the Rust language.")
             .await?;
-        assert!(!resp.message_choices.is_empty());
+        match resp {
+            ResponseType::Old(_) => assert!(true),
+            _ => assert!(false),
+        };
         Ok(())
     }
 
