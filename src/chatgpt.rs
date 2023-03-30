@@ -40,6 +40,16 @@ pub mod test {
     }
 
     #[tokio::test]
+    async fn test_old_client() -> crate::Result<()> {
+        let client = ChatGPT::oldnew(std::env::var("TEST_API_KEY")?)?;
+        let resp = client
+            .send_message("Write me a short pun about the Rust language.")
+            .await?;
+        assert!(!resp.message_choices.is_empty());
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_undirected_conversation() -> crate::Result<()> {
         let client = ChatGPT::new(std::env::var("TEST_API_KEY")?)?;
         let mut conv = client.new_conversation();

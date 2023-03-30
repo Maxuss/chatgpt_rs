@@ -15,22 +15,31 @@ use {
     crate::types::ResponseChunk, futures_util::Stream,
 };
 
-use crate::config::ModelConfiguration;
+use crate::config::{ModelConfiguration, OldModelConfiguration};
 use crate::converse::Conversation;
-use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
+use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, OldCompletionRequest, Role, ServerResponse};
 
+#[derive(Debug, Clone)]
+pub enum ConfigType {
+    Old(OldModelConfiguration),
+    New(ModelConfiguration),
+}
 /// The client that operates the ChatGPT API
 #[derive(Debug, Clone)]
 pub struct ChatGPT {
     client: reqwest::Client,
     /// The configuration for this ChatGPT client
-    pub config: ModelConfiguration,
+    pub config: ConfigType,
 }
 
 impl ChatGPT {
     /// Constructs a new ChatGPT API client with provided API key and default configuration
     pub fn new<S: Into<String>>(api_key: S) -> crate::Result<Self> {
         Self::new_with_config(api_key, ModelConfiguration::default())
+    }
+
+    pub fn oldnew<S: Into<String>>(api_key: S) -> crate::Result<Self> {
+        Self::new_with_old_config(api_key, OldModelConfiguration::default())
     }
 
     /// Constructs a new ChatGPT API client with provided API Key and Configuration
@@ -47,7 +56,23 @@ impl ChatGPT {
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
             .build()?;
-        Ok(Self { client, config })
+        Ok(Self { client, config: ConfigType::New(config) })
+    }
+
+    pub fn new_with_old_config<S: Into<String>>(
+        api_key: S,
+        config: OldModelConfiguration,
+    ) -> crate::Result<Self> {
+        let api_key = api_key.into();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_bytes(format!("Bearer {api_key}").as_bytes())?,
+        );
+        let client = reqwest::ClientBuilder::new()
+            .default_headers(headers)
+            .build()?;
+        Ok(Self { client, config: ConfigType::Old(config) })
     }
 
     /// Restores a conversation from local conversation JSON file.
@@ -116,21 +141,25 @@ impl ChatGPT {
         &self,
         history: &Vec<ChatMessage>,
     ) -> crate::Result<CompletionResponse> {
+        let config = match &self.config {
+            ConfigType::Old(v) => Err(crate::err::Error::ParsingError("Function only available for newer models".to_string())),
+            ConfigType::New(v) => Ok(v)
+        }?;
         let response: ServerResponse = self
             .client
             .post(
-                Url::from_str(self.config.api_url)
+                Url::from_str(config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
-                model: self.config.engine.as_ref(),
+                model: config.engine.as_ref(),
                 messages: history,
                 stream: false,
-                temperature: self.config.temperature,
-                top_p: self.config.top_p,
-                frequency_penalty: self.config.frequency_penalty,
-                presence_penalty: self.config.presence_penalty,
-                reply_count: self.config.reply_count,
+                temperature: config.temperature,
+                top_p: config.top_p,
+                frequency_penalty: config.frequency_penalty,
+                presence_penalty: config.presence_penalty,
+                reply_count: config.reply_count,
             })
             .send()
             .await?
@@ -208,26 +237,44 @@ impl ChatGPT {
         &self,
         message: S,
     ) -> crate::Result<CompletionResponse> {
-        let response: ServerResponse = self
-            .client
-            .post(
-                Url::from_str(self.config.api_url)
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
-            .json(&CompletionRequest {
-                model: self.config.engine.as_ref(),
+        let response = match &self.config {
+            ConfigType::Old(v) => self
+                .client
+                .post(
+                    Url::from_str(v.api_url)
+                        .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+                ).json(&OldCompletionRequest {
+                model: v.engine.as_ref(),
+                prompt: message.into(),
+                max_tokens: v.max_tokens,
+                stream: false,
+                logprobs: v.logprobs,
+                stop: v.stop.clone(),
+                temperature: v.temperature,
+                top_p: v.top_p,
+                frequency_penalty: v.frequency_penalty,
+                presence_penalty: v.presence_penalty,
+                reply_count:v.reply_count,
+            }),
+            ConfigType::New(v) => self
+                .client
+                .post(
+                    Url::from_str(v.api_url)
+                        .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
+                ).json(&CompletionRequest {
+                model: v.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
                 }],
                 stream: false,
-                temperature: self.config.temperature,
-                top_p: self.config.top_p,
-                frequency_penalty: self.config.frequency_penalty,
-                presence_penalty: self.config.presence_penalty,
-                reply_count: self.config.reply_count,
+                temperature: v.temperature,
+                top_p: v.top_p,
+                frequency_penalty: v.frequency_penalty,
+                presence_penalty: v.presence_penalty,
+                reply_count: v.reply_count,
             })
-            .send()
+        }.send()
             .await?
             .json()
             .await?;

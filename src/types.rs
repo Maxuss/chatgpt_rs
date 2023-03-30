@@ -79,6 +79,33 @@ pub struct CompletionRequest<'a> {
     pub reply_count: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize)]
+pub struct OldCompletionRequest<'a> {
+    /// The model to be used, currently `gpt-3.5-turbo`, but may change in future
+    pub model: &'a str,
+    /// The message
+    pub prompt: String,
+    /// The maximum number of tokens to generate in the completion.
+    pub max_tokens: u32,
+    /// Whether the message response should be gradually streamed
+    pub stream: bool,
+    /// Include the log probabilities on the logprobs most likely tokens, as well the chosen tokens. For example, if logprobs is 5, the API will return a list of the 5 most likely tokens. The API will always return the logprob of the sampled token, so there may be up to logprobs+1 elements in the response. The maximum value for logprobs is 5
+    pub logprobs: Option<u32>,
+    /// Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.
+    pub stop: String,
+    /// The extra randomness of response
+    pub temperature: f32,
+    /// Controls diversity via nucleus sampling, not recommended to use with temperature
+    pub top_p: f32,
+    /// Determines how much to penalize new tokens based on their existing frequency so far
+    pub frequency_penalty: f32,
+    /// Determines how much to penalize new tokens pased on their existing presence so far
+    pub presence_penalty: f32,
+    /// Determines the amount of output responses
+    #[serde(rename = "n")]
+    pub reply_count: u32,
+}
+
 /// Represents a response from the API
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 #[serde(untagged)]
