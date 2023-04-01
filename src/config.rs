@@ -19,7 +19,7 @@ pub struct ModelConfiguration {
     /// The maximum amount of replies
     pub reply_count: u32,
     /// URL of the /v1/chat/completions endpoint. Can be used to set a proxy
-    pub api_url: &'static str,
+    pub api_url: String,
 }
 
 impl Default for ModelConfiguration {
@@ -31,7 +31,7 @@ impl Default for ModelConfiguration {
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
-            api_url: "https://api.openai.com/v1/chat/completions",
+            api_url: "https://api.openai.com/v1/chat/completions".to_string(),
         }
     }
 }
@@ -54,7 +54,7 @@ pub struct OldModelConfiguration {
     /// Determines how much to penalize new tokens based on their existing frequency so far
     pub frequency_penalty: f32,
     /// URL of the /v1/completions endpoint. Can be used to set a proxy
-    pub api_url: &'static str,
+    pub api_url: String,
     /// Include the log probabilities on the logprobs most likely tokens, as well the chosen tokens. For example, if logprobs is 5, the API will return a list of the 5 most likely tokens. The API will always return the logprob of the sampled token, so there may be up to logprobs+1 elements in the response. The maximum value for logprobs is 5
     pub logprobs: Option<u32>,
     /// Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.
@@ -71,7 +71,7 @@ impl Default for OldModelConfiguration {
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
-            api_url: "https://api.openai.com/v1/completions",
+            api_url: "https://api.openai.com/v1/completions".to_string(),
             logprobs: None,
             stop: "\n".to_string(),
         }
