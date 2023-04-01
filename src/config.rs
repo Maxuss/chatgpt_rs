@@ -3,7 +3,7 @@ use std::fmt::Display;
 use derive_builder::Builder;
 
 /// The struct containing main configuration for the ChatGPT API
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Builder)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Builder)]
 #[builder(default, setter(into))]
 pub struct ModelConfiguration {
     /// The GPT version used.

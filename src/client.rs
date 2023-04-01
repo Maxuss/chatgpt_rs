@@ -154,7 +154,7 @@ impl ChatGPT {
         let response: ServerResponse = self
             .client
             .post(
-                Url::from_str(config.api_url)
+                Url::from_str(&config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
@@ -206,7 +206,7 @@ impl ChatGPT {
         let response_stream = self
             .client
             .post(
-                Url::from_str(config.api_url)
+                Url::from_str(&config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
@@ -266,7 +266,7 @@ impl ChatGPT {
             ConfigType::Old(v) => self
                 .client
                 .post(
-                    Url::from_str(v.api_url)
+                    Url::from_str(&v.api_url)
                         .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
                 ).json(&OldCompletionRequest {
                 model: v.engine.as_ref(),
@@ -284,7 +284,7 @@ impl ChatGPT {
             ConfigType::New(v) => self
                 .client
                 .post(
-                    Url::from_str(v.api_url)
+                    Url::from_str(&v.api_url)
                         .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
                 ).json(&CompletionRequest {
                 model: v.engine.as_ref(),
@@ -331,7 +331,7 @@ impl ChatGPT {
         let response_stream = self
             .client
             .post(
-                Url::from_str(config.api_url)
+                Url::from_str(&config.api_url)
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
