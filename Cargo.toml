@@ -34,7 +34,7 @@ futures-util = { version = "0.3.26", optional = true }
 tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
 
 [features]
-default = ["json"]
+default = ["json", "gpt3"]
 streams = [
     "dep:eventsource-stream",
     "dep:futures-util",
@@ -43,3 +43,4 @@ streams = [
 ]
 json = ["dep:serde_json", "tokio/fs"]
 postcard = ["dep:postcard", "tokio/fs"]
+gpt3 = []

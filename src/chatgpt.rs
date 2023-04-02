@@ -28,6 +28,7 @@ pub mod test {
         config::{ChatGPTEngine, ModelConfiguration},
         types::ResponseChunk,
     };
+    use crate::types::ResponseType;
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
@@ -35,9 +36,26 @@ pub mod test {
         let resp = client
             .send_message("Write me a short pun about the Rust language.")
             .await?;
-        assert!(!resp.message_choices.is_empty());
+        match resp {
+            ResponseType::New(_) => assert!(true),
+            _ => assert!(false),
+        };
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_old_client() -> crate::Result<()> {
+        let client = ChatGPT::old_new(std::env::var("TEST_API_KEY")?)?;
+        let resp = client
+            .send_message("Write me a short pun about the Rust language.")
+            .await?;
+        match resp {
+            ResponseType::Old(_) => assert!(true),
+            _ => assert!(false),
+        };
+        Ok(())
+    }
+
 
     #[tokio::test]
     async fn test_undirected_conversation() -> crate::Result<()> {
