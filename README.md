@@ -43,7 +43,7 @@ of the crate, and special methods to request streamed responses.
 
 Here is an example:
 
-```rs
+```rust
 // Acquiring a streamed response
 // Note, that the `futures_util` crate is required for most
 // stream related utility methods
@@ -117,7 +117,7 @@ Conversations also support returning streamed responses (with the `streams` feat
 
 Here is an example:
 
-```rs
+```rust
 // Acquiring a streamed response
 // Note, that the `futures_util` crate is required for most
 // stream related utility methods
@@ -202,7 +202,7 @@ let mut restored = client
 You can configure your model further with `ModelConfigurationBuilder`, which also
 allows to use proxies:
 
-```rs
+```rust
 // Getting the API key here
 let key = args().nth(1).unwrap();
 
