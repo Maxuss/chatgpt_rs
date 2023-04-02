@@ -5,3 +5,4 @@ pub use crate::converse::Conversation;
 pub use crate::types::ResponseChunk;
 pub use crate::types::{ChatMessage, MessageChoice, TokenUsage};
 pub use crate::Result;
+pub use url::Url;

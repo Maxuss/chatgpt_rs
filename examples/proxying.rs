@@ -1,4 +1,4 @@
-use std::env::args;
+use std::{env::args, str::FromStr};
 
 use chatgpt::prelude::*;
 
@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
     let client = ChatGPT::new_with_config(
         key,
         ModelConfigurationBuilder::default()
-            .api_url("https://api.pawan.krd/v1/chat/completions")
+            .api_url(Url::from_str("https://api.pawan.krd/v1/chat/completions").unwrap())
             .temperature(1.0)
             .engine(ChatGPTEngine::Gpt4_32k)
             .build()

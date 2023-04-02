@@ -1,12 +1,8 @@
 use std::path::Path;
-use std::str::FromStr;
 
 use chrono::Local;
 use reqwest::header::AUTHORIZATION;
-use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    Url,
-};
+use reqwest::header::{HeaderMap, HeaderValue};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 #[cfg(feature = "streams")]
@@ -118,10 +114,7 @@ impl ChatGPT {
     ) -> crate::Result<CompletionResponse> {
         let response: ServerResponse = self
             .client
-            .post(
-                Url::from_str(self.config.api_url)
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
+            .post(self.config.api_url.clone())
             .json(&CompletionRequest {
                 model: self.config.engine.as_ref(),
                 messages: history,
@@ -210,10 +203,7 @@ impl ChatGPT {
     ) -> crate::Result<CompletionResponse> {
         let response: ServerResponse = self
             .client
-            .post(
-                Url::from_str(self.config.api_url)
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
+            .post(self.config.api_url.clone())
             .json(&CompletionRequest {
                 model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {

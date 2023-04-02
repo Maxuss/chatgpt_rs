@@ -1,9 +1,9 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use derive_builder::Builder;
 
 /// The struct containing main configuration for the ChatGPT API
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Builder)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Builder)]
 #[builder(default, setter(into))]
 pub struct ModelConfiguration {
     /// The GPT version used.
@@ -19,7 +19,7 @@ pub struct ModelConfiguration {
     /// The maximum amount of replies
     pub reply_count: u32,
     /// URL of the /v1/chat/completions endpoint. Can be used to set a proxy
-    pub api_url: &'static str,
+    pub api_url: url::Url,
 }
 
 impl Default for ModelConfiguration {
@@ -31,7 +31,7 @@ impl Default for ModelConfiguration {
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
-            api_url: "https://api.openai.com/v1/chat/completions",
+            api_url: url::Url::from_str("https://api.openai.com/v1/chat/completions").unwrap(),
         }
     }
 }
