@@ -1,4 +1,5 @@
 use std::path::Path;
+use url::Url;
 
 use chrono::Local;
 use reqwest::header::AUTHORIZATION;
@@ -10,6 +11,7 @@ use {
     crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
     crate::types::ResponseChunk, futures_util::Stream,
 };
+
 
 use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
@@ -149,13 +151,15 @@ impl ChatGPT {
         &self,
         history: &Vec<ChatMessage>,
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use std::str::FromStr;
+
         use eventsource_stream::Eventsource;
         use futures_util::StreamExt;
 
         let response_stream = self
             .client
             .post(
-                Url::from_str(self.config.api_url)
+                Url::parse(self.config.api_url.as_str())
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
@@ -243,7 +247,7 @@ impl ChatGPT {
         let response_stream = self
             .client
             .post(
-                Url::from_str(self.config.api_url)
+                Url::parse(self.config.api_url.as_str())
                     .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
             )
             .json(&CompletionRequest {
