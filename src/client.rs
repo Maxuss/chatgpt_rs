@@ -53,7 +53,7 @@ impl ChatGPT {
         Ok(Self { client, config })
     }
 
-    /// Constructs a new ChatGPT API client with provided API Key and Configuration
+    /// Constructs a new ChatGPT API client with provided API Key, Configuration and Reqwest proxy
     pub fn new_with_proxy_andconfig<S: Into<String>>(
         api_key: S,
         config: ModelConfiguration,
