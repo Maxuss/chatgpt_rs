@@ -1,10 +1,13 @@
 use std::path::Path;
 
 use chrono::Local;
+use reqwest::{self, Client, Proxy};
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+use std::time::Duration;
+
 #[cfg(feature = "streams")]
 use {
     crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
@@ -29,6 +32,10 @@ impl ChatGPT {
         Self::new_with_config(api_key, ModelConfiguration::default())
     }
 
+     /// Constructs a new ChatGPT API client with provided API key and default configuration
+     pub fn new_with_proxy<S: Into<String>>(api_key: S,proxy: Proxy) -> crate::Result<Self> {
+        Self::new_with_config_proxy(api_key, ModelConfiguration::default(), proxy)
+    }
     /// Constructs a new ChatGPT API client with provided API Key and Configuration
     pub fn new_with_config<S: Into<String>>(
         api_key: S,
@@ -46,6 +53,26 @@ impl ChatGPT {
         Ok(Self { client, config })
     }
 
+    /// Constructs a new ChatGPT API client with provided API Key, Configuration and Reqwest proxy
+    pub fn new_with_config_proxy<S: Into<String>>(
+        api_key: S,
+        config: ModelConfiguration,
+        proxy: Proxy,
+    ) -> crate::Result<Self> {
+        let api_key = api_key.into();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_bytes(format!("Bearer {api_key}").as_bytes())?,
+        );
+        
+        let client = reqwest::ClientBuilder::new()
+            .default_headers(headers)
+            .timeout(Duration::from_secs(10))
+            .proxy(proxy)
+            .build()?;
+        Ok(Self { client, config })
+    }
     /// Restores a conversation from local conversation JSON file.
     /// The conversation file can originally be saved using the [`Conversation::save_history_json()`].
     #[cfg(feature = "json")]
