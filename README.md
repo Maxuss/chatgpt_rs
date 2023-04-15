@@ -4,7 +4,7 @@ This library has now been rewritten to use official OpenAI's ChatGPT API, instea
 
 ## ⚠️ Important ⚠️
 If you have previously used this library, older versions (0.6.0 and below) are deprecated, unsupported, and *will* produce errors. 
-You should use the latest version, which is `1.1.2`.
+You should use the latest version, which is `1.1.3`.
 
 ## Usage
 
