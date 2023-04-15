@@ -1,12 +1,12 @@
 use std::path::Path;
 
 use chrono::Local;
-use reqwest::{self, Client, Proxy};
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{self, Proxy};
+use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use std::time::Duration;
 
 #[cfg(feature = "streams")]
 use {
@@ -32,8 +32,8 @@ impl ChatGPT {
         Self::new_with_config(api_key, ModelConfiguration::default())
     }
 
-     /// Constructs a new ChatGPT API client with provided API key and default configuration
-     pub fn new_with_proxy<S: Into<String>>(api_key: S,proxy: Proxy) -> crate::Result<Self> {
+    /// Constructs a new ChatGPT API client with provided API key and default configuration
+    pub fn new_with_proxy<S: Into<String>>(api_key: S, proxy: Proxy) -> crate::Result<Self> {
         Self::new_with_config_proxy(api_key, ModelConfiguration::default(), proxy)
     }
     /// Constructs a new ChatGPT API client with provided API Key and Configuration
@@ -65,7 +65,7 @@ impl ChatGPT {
             AUTHORIZATION,
             HeaderValue::from_bytes(format!("Bearer {api_key}").as_bytes())?,
         );
-        
+
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
             .timeout(Duration::from_secs(10))
