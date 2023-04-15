@@ -181,10 +181,7 @@ impl ChatGPT {
 
         let response_stream = self
             .client
-            .post(
-                Url::from_str(self.config.api_url)
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
+            .post(self.config.api_url.clone())
             .json(&CompletionRequest {
                 model: self.config.engine.as_ref(),
                 stream: true,
@@ -269,10 +266,7 @@ impl ChatGPT {
         use futures_util::StreamExt;
         let response_stream = self
             .client
-            .post(
-                Url::from_str(self.config.api_url)
-                    .map_err(|err| crate::err::Error::ParsingError(err.to_string()))?,
-            )
+            .post(self.config.api_url.clone())
             .json(&CompletionRequest {
                 model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
