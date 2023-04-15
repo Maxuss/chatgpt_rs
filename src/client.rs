@@ -54,7 +54,7 @@ impl ChatGPT {
     }
 
     /// Constructs a new ChatGPT API client with provided API Key, Configuration and Reqwest proxy
-    pub fn new_with_proxy_andconfig<S: Into<String>>(
+    pub fn new_with_config_proxy<S: Into<String>>(
         api_key: S,
         config: ModelConfiguration,
         proxy: Proxy,
