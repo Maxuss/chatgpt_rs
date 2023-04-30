@@ -57,7 +57,8 @@ impl Conversation {
         Ok(resp)
     }
 
-    /// Sends the message to the ChatGPT API and returns the completion response as stream.
+    /// Sends the message to the ChatGPT API and returns the completion response as stream. **Stream will be empty** if
+    /// any errors are returned from the server.
     ///
     /// Note, that this method will not automatically save the received message to history, as
     /// it is returned in streamed chunks. You will have to collect them into chat message yourself.

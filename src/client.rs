@@ -166,7 +166,8 @@ impl ChatGPT {
         }
     }
 
-    /// Explicitly sends whole message history to the API and returns the response as stream.
+    /// Explicitly sends whole message history to the API and returns the response as stream. **Stream will be empty** if
+    /// any errors are returned from the server.
     ///
     /// In most cases, if you would like to store message history, you should be looking at the [`Conversation`] struct, and
     /// [`Self::new_conversation()`] and [`Self::new_conversation_directed()`]
@@ -255,7 +256,8 @@ impl ChatGPT {
         }
     }
 
-    /// Sends a single message to the API, and returns the response as stream, without preserving message history.
+    /// Sends a single message to the API, and returns the response as stream, without preserving message history. **Stream will be empty** if
+    /// any errors are returned from the server.
     ///
     /// Requires the `streams` crate feature
     #[cfg(feature = "streams")]
