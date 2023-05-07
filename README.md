@@ -2,10 +2,6 @@
 
 This library has now been rewritten to use official OpenAI's ChatGPT API, instead of other unofficial workarounds.
 
-## ⚠️ Important ⚠️
-If you have previously used this library, older versions (0.6.0 and below) are deprecated, unsupported, and *will* produce errors. 
-You should use the latest version, which is `1.1.4`.
-
 ## Usage
 
 Here is a simple usage of the API, getting completion for a single message.
