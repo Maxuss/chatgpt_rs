@@ -21,17 +21,15 @@ async fn main() -> Result<()> {
     // Iterating over stream contents
     stream
         .for_each(|each| async move {
-            match each {
-                ResponseChunk::Content {
-                    delta,
-                    response_index: _,
-                } => {
-                    // Printing part of response without the newline
-                    print!("{delta}");
-                    // Manually flushing the standard output, as `print` macro does not do that
-                    stdout().lock().flush().unwrap();
-                }
-                _ => {}
+            if let ResponseChunk::Content {
+                delta,
+                response_index: _,
+            } = each
+            {
+                // Printing part of response without the newline
+                print!("{delta}");
+                // Manually flushing the standard output, as `print` macro does not do that
+                stdout().lock().flush().unwrap();
             }
         })
         .await;
