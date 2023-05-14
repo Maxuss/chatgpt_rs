@@ -35,6 +35,7 @@ futures-util = { version = "0.3.28", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.28.0", features = ["macros", "rt-multi-thread"] }
+chatgpt_rs = { path = ".", features = ["json", "streams", "postcard"] }
 
 [features]
 default = ["json"]
