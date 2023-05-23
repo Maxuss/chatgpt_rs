@@ -64,7 +64,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chatgpt_rs"
-version = "1.1.6"
+version = "1.1.7"
 dependencies = [
  "chatgpt_rs",
  "chrono",
