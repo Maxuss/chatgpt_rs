@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use chrono::Local;
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{self, Proxy};
@@ -122,7 +121,7 @@ impl ChatGPT {
     ///
     /// Conversations record message history.
     pub fn new_conversation(&self) -> Conversation {
-        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible. Today is: {0}", Local::now().format("%d/%m/%Y %H:%M")))
+        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible."))
     }
 
     /// Starts a new conversation with a specified starting message.

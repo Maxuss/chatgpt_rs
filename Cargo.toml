@@ -25,7 +25,6 @@ serde = { version = "1.0.163", features = ["derive"] }
 serde_json = { version = "1.0.96", optional = true }
 thiserror = "1.0.38"
 url = "2.4.0"
-chrono = "0.4.26"
 derive_builder = "0.12.0"
 
 postcard = { version = "1.0.4", features = ["alloc"], optional = true }
