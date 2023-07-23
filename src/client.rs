@@ -121,7 +121,10 @@ impl ChatGPT {
     ///
     /// Conversations record message history.
     pub fn new_conversation(&self) -> Conversation {
-        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible."))
+        self.new_conversation_directed(
+            "You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible."
+                .to_string(),
+        )
     }
 
     /// Starts a new conversation with a specified starting message.
@@ -266,6 +269,7 @@ impl ChatGPT {
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
         use eventsource_stream::Eventsource;
         use futures_util::StreamExt;
+
         let response_stream = self
             .client
             .post(self.config.api_url.clone())
