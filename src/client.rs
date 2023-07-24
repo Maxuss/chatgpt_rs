@@ -2,9 +2,9 @@ use std::path::Path;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{self, Proxy};
 #[cfg(feature = "streams")]
 use reqwest::Response;
+use reqwest::{self, Proxy};
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -267,12 +267,15 @@ impl ChatGPT {
     }
 
     #[cfg(feature = "streams")]
-    fn process_streaming_response(response: Response) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+    fn process_streaming_response(
+        response: Response,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
         use eventsource_stream::Eventsource;
         use futures_util::StreamExt;
 
         // also handles errors
-        response.error_for_status()
+        response
+            .error_for_status()
             .map(|response| {
                 let response_stream = response.bytes_stream().eventsource();
                 response_stream.map(move |part| {
@@ -280,14 +283,16 @@ impl ChatGPT {
                     if chunk == "[DONE]" {
                         return ResponseChunk::Done;
                     }
-                    let data: InboundResponseChunk =
-                        serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
+                    let data: InboundResponseChunk = serde_json::from_str(chunk)
+                        .expect("Invalid inbound streaming response payload!");
                     let choice = data.choices[0].to_owned();
                     match choice.delta {
-                        InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
-                            role,
-                            response_index: choice.index,
-                        },
+                        InboundChunkPayload::AnnounceRoles { role } => {
+                            ResponseChunk::BeginResponse {
+                                role,
+                                response_index: choice.index,
+                            }
+                        }
                         InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
                             delta: content,
                             response_index: choice.index,
