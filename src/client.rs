@@ -2,7 +2,7 @@ use std::path::Path;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{self, Proxy, Response};
+use reqwest::{self, Proxy};
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
