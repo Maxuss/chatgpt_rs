@@ -3,6 +3,8 @@ use std::path::Path;
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{self, Proxy};
+#[cfg(feature = "streams")]
+use reqwest::Response;
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
