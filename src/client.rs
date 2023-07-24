@@ -2,6 +2,8 @@ use std::path::Path;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
+#[cfg(feature = "streams")]
+use reqwest::Response;
 use reqwest::{self, Proxy};
 use std::time::Duration;
 use tokio::fs::File;
@@ -121,7 +123,10 @@ impl ChatGPT {
     ///
     /// Conversations record message history.
     pub fn new_conversation(&self) -> Conversation {
-        self.new_conversation_directed(format!("You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible."))
+        self.new_conversation_directed(
+            "You are ChatGPT, an AI model developed by OpenAI. Answer as concisely as possible."
+                .to_string(),
+        )
     }
 
     /// Starts a new conversation with a specified starting message.
@@ -177,10 +182,7 @@ impl ChatGPT {
         &self,
         history: &Vec<ChatMessage>,
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
-        use eventsource_stream::Eventsource;
-        use futures_util::StreamExt;
-
-        let response_stream = self
+        let response = self
             .client
             .post(self.config.api_url.clone())
             .json(&CompletionRequest {
@@ -194,31 +196,9 @@ impl ChatGPT {
                 reply_count: self.config.reply_count,
             })
             .send()
-            .await?
-            .bytes_stream()
-            .eventsource();
-        Ok(response_stream.map(move |part| {
-            let chunk = &part.expect("Stream closed abruptly!").data;
-            if chunk == "[DONE]" {
-                return ResponseChunk::Done;
-            }
-            let data: InboundResponseChunk =
-                serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
-            let choice = data.choices[0].to_owned();
-            match choice.delta {
-                InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
-                    role,
-                    response_index: choice.index,
-                },
-                InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
-                    delta: content,
-                    response_index: choice.index,
-                },
-                InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
-                    response_index: choice.index,
-                },
-            }
-        }))
+            .await?;
+
+        Self::process_streaming_response(response)
     }
 
     /// Sends a single message to the API without preserving message history.
@@ -264,9 +244,7 @@ impl ChatGPT {
         &self,
         message: S,
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
-        use eventsource_stream::Eventsource;
-        use futures_util::StreamExt;
-        let response_stream = self
+        let response = self
             .client
             .post(self.config.api_url.clone())
             .json(&CompletionRequest {
@@ -283,30 +261,48 @@ impl ChatGPT {
                 reply_count: self.config.reply_count,
             })
             .send()
-            .await?
-            .bytes_stream()
-            .eventsource();
-        Ok(response_stream.map(move |part| {
-            let chunk = &part.expect("Stream closed abruptly!").data;
-            if chunk == "[DONE]" {
-                return ResponseChunk::Done;
-            }
-            let data: InboundResponseChunk =
-                serde_json::from_str(chunk).expect("Invalid inbound streaming response payload!");
-            let choice = data.choices[0].to_owned();
-            match choice.delta {
-                InboundChunkPayload::AnnounceRoles { role } => ResponseChunk::BeginResponse {
-                    role,
-                    response_index: choice.index,
-                },
-                InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
-                    delta: content,
-                    response_index: choice.index,
-                },
-                InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
-                    response_index: choice.index,
-                },
-            }
-        }))
+            .await?;
+
+        Self::process_streaming_response(response)
+    }
+
+    #[cfg(feature = "streams")]
+    fn process_streaming_response(
+        response: Response,
+    ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
+        use eventsource_stream::Eventsource;
+        use futures_util::StreamExt;
+
+        // also handles errors
+        response
+            .error_for_status()
+            .map(|response| {
+                let response_stream = response.bytes_stream().eventsource();
+                response_stream.map(move |part| {
+                    let chunk = &part.expect("Stream closed abruptly!").data;
+                    if chunk == "[DONE]" {
+                        return ResponseChunk::Done;
+                    }
+                    let data: InboundResponseChunk = serde_json::from_str(chunk)
+                        .expect("Invalid inbound streaming response payload!");
+                    let choice = data.choices[0].to_owned();
+                    match choice.delta {
+                        InboundChunkPayload::AnnounceRoles { role } => {
+                            ResponseChunk::BeginResponse {
+                                role,
+                                response_index: choice.index,
+                            }
+                        }
+                        InboundChunkPayload::StreamContent { content } => ResponseChunk::Content {
+                            delta: content,
+                            response_index: choice.index,
+                        },
+                        InboundChunkPayload::Close {} => ResponseChunk::CloseResponse {
+                            response_index: choice.index,
+                        },
+                    }
+                })
+            })
+            .map_err(crate::err::Error::from)
     }
 }
