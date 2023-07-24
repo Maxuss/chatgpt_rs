@@ -39,5 +39,5 @@ pub enum Error {
     IOError(#[from] tokio::io::Error),
     /// Most likely env var not provided
     #[error("Error while trying to access an environment variable: {0}")]
-    VarError(#[from] VarError),
+    VarError(#[from] VarError)
 }
