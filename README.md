@@ -7,7 +7,6 @@ This library has now been rewritten to use official OpenAI's ChatGPT API, instea
 Here is a simple usage of the API, getting completion for a single message.
 You can see more practical examples in the `examples` directory.
 
-
 ```rust
 use chatgpt::prelude::*;
 
