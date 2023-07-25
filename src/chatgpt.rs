@@ -13,6 +13,7 @@ pub mod err;
 pub mod prelude;
 /// Types returned from the API and sent to it
 pub mod types;
+pub mod functions;
 
 /// Result that is returned from most ChatGPT functions
 pub type Result<T> = std::result::Result<T, err::Error>;

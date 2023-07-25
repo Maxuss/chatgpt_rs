@@ -31,6 +31,7 @@ postcard = { version = "1.0.4", features = ["alloc"], optional = true }
 eventsource-stream = { version = "0.2.3", optional = true }
 futures = { version = "0.3.28", optional = true }
 futures-util = { version = "0.3.28", optional = true }
+gpt_fn_macros = { path = "./fn_macros", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
@@ -43,6 +44,9 @@ streams = [
     "dep:futures-util",
     "dep:futures",
     "reqwest/stream",
+]
+functions = [
+    "dep:gpt_fn_macros"
 ]
 json = ["dep:serde_json", "tokio/fs"]
 postcard = ["dep:postcard", "tokio/fs"]
