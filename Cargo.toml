@@ -50,7 +50,7 @@ functions = [
     "dep:gpt_fn_macros",
     "dep:schemars"
 ]
-function_types = [
+functions_extra = [
     "schemars/chrono",
     "schemars/url",
     "schemars/uuid1",

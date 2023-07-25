@@ -4,7 +4,9 @@ mod types;
 pub use traits::*;
 pub use types::*;
 
+pub use serde::Deserialize;
 pub use schemars as schema;
+pub use gpt_fn_macros::*;
 
 #[cfg(test)]
 mod tests {
