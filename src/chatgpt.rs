@@ -13,6 +13,8 @@ pub mod err;
 pub mod prelude;
 /// Types returned from the API and sent to it
 pub mod types;
+#[cfg(feature = "functions")]
+/// Contains API for function calling
 pub mod functions;
 
 /// Result that is returned from most ChatGPT functions
