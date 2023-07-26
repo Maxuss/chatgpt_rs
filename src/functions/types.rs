@@ -1,3 +1,4 @@
+use std::future::Future;
 use schemars::schema_for;
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
@@ -19,4 +20,15 @@ impl<'a, A: FunctionArgument<'a>> Serialize for FunctionDescriptor<'a, A> {
         s.serialize_field("parameters", &schema)?;
         s.end()
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct GptFunction<
+    'a,
+    A: FunctionArgument<'a>,
+    F: Fn(A) -> Fut,
+    Fut: Future<Output = ()>
+> {
+    pub descriptor: FunctionDescriptor<'a, A>,
+    pub callable: F
 }

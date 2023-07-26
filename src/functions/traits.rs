@@ -1,5 +1,8 @@
+use serde::{Serialize, Deserialize};
+use schemars::JsonSchema;
+
 // deserialize -> parsing result from API
 // schema -> providing description
-pub trait FunctionArgument<'de>: serde::Deserialize<'de> + schemars::JsonSchema { }
+pub trait FunctionArgument<'de>: Deserialize<'de> + JsonSchema { }
 
-impl<'de, T: serde::Deserialize<'de> + schemars::JsonSchema> FunctionArgument<'de> for T { }
+impl<'de, T: Deserialize<'de> + JsonSchema> FunctionArgument<'de> for T { }
