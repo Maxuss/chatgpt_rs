@@ -1,14 +1,15 @@
 use std::future::Future;
+use std::marker::PhantomData;
 use schemars::schema_for;
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
-use crate::functions::FunctionArgument;
+use crate::functions::{CallableAsyncFunction, FunctionArgument};
 
 #[derive(Debug, Clone)]
 pub struct FunctionDescriptor<'a, A: FunctionArgument<'a>> {
     pub name: &'a str,
     pub description: &'a str,
-    pub parameters: A
+    pub parameters: PhantomData<A>
 }
 
 impl<'a, A: FunctionArgument<'a>> Serialize for FunctionDescriptor<'a, A> {
@@ -26,9 +27,8 @@ impl<'a, A: FunctionArgument<'a>> Serialize for FunctionDescriptor<'a, A> {
 pub struct GptFunction<
     'a,
     A: FunctionArgument<'a>,
-    F: Fn(A) -> Fut,
-    Fut: Future<Output = ()>
+    C: CallableAsyncFunction<A>
 > {
     pub descriptor: FunctionDescriptor<'a, A>,
-    pub callable: F
+    pub callable: PhantomData<C>
 }

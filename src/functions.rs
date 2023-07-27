@@ -4,8 +4,14 @@ mod types;
 pub use traits::*;
 pub use types::*;
 
-pub use serde::Deserialize;
+// used by proc macros
+#[doc(hidden)]
+pub use serde;
+#[doc(hidden)]
 pub use schemars as schema;
+#[doc(hidden)]
+pub use async_trait as async_trait;
+
 pub use gpt_fn_macros::*;
 
 #[cfg(test)]

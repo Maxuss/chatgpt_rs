@@ -33,6 +33,7 @@ futures = { version = "0.3.28", optional = true }
 futures-util = { version = "0.3.28", optional = true }
 gpt_fn_macros = { path = "./fn_macros", optional = true }
 schemars = { version = "0.8.12", optional = true }
+async-trait = { version = "0.1.72", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
@@ -48,7 +49,8 @@ streams = [
 ]
 functions = [
     "dep:gpt_fn_macros",
-    "dep:schemars"
+    "dep:schemars",
+    "dep:async-trait"
 ]
 functions_extra = [
     "schemars/chrono",

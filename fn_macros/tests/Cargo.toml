@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 chatgpt_rs = { path = "../../../chatgpt_rs", features = ["functions", "functions_extra"] }
+serde = "1.0.171"
