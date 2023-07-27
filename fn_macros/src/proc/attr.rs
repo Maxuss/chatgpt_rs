@@ -1,14 +1,12 @@
 use proc_macro::TokenStream;
 use std::collections::HashMap;
-use proc_macro2::Literal;
-use syn::{Expr, ItemFn, Meta::NameValue, MetaNameValue, Lit, ExprLit, FnArg, Pat, PatType, LitStr, Type, ReturnType, TypePath, parse_quote, GenericParam};
+use syn::{Expr, ItemFn, Meta::NameValue, MetaNameValue, Lit, ExprLit, FnArg, Pat, LitStr, ReturnType, parse_quote};
 use syn::spanned::Spanned;
 use quote::{quote_spanned, quote};
-use syn::Pat::Ident;
 use syn::token::RArrow;
 
 pub fn process_fn_macro(
-    attr: TokenStream,
+    _attr: TokenStream,
     function: TokenStream
 ) -> TokenStream {
     let input = syn::parse_macro_input!(function as ItemFn);

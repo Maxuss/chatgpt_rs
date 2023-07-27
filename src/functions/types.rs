@@ -2,7 +2,6 @@ use crate::functions::{CallableAsyncFunction, FunctionArgument};
 use schemars::schema_for;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
-use std::future::Future;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
