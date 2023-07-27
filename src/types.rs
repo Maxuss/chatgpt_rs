@@ -13,6 +13,8 @@ pub enum Role {
     Assistant,
     /// A message sent by the user
     User,
+    /// A message related to ChatGPT functions. Does not have much use without the `functions` feature.
+    Function,
 }
 
 /// Container for the sent/received ChatGPT messages
