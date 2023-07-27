@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
-use schemars::{JsonSchema, schema_for};
+use schemars::{schema_for, JsonSchema};
+use serde::{Deserialize, Serialize};
 
 // deserialize -> parsing result from API
 // schema -> providing description
-pub trait FunctionArgument<'de>: Deserialize<'de> + JsonSchema { }
+pub trait FunctionArgument<'de>: Deserialize<'de> + JsonSchema {}
 
-impl<'de, T: Deserialize<'de> + JsonSchema> FunctionArgument<'de> for T { }
+impl<'de, T: Deserialize<'de> + JsonSchema> FunctionArgument<'de> for T {}
 
 #[async_trait::async_trait]
 pub trait CallableAsyncFunction<A> {

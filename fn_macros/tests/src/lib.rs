@@ -1,10 +1,10 @@
 // #![cfg(test)]
 
-use std::future::Future;
-use std::marker::PhantomData;
-use chatgpt::functions::{FunctionDescriptor, gpt_function, GptFunction};
-use chatgpt::functions::schema::JsonSchema;
-use chatgpt::functions::serde::Deserialize;
+
+
+use chatgpt::functions::{gpt_function};
+
+
 
 
 /// This is some test function

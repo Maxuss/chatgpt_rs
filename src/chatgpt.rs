@@ -9,13 +9,13 @@ pub mod config;
 pub mod converse;
 /// This module contains the errors related to the API
 pub mod err;
+#[cfg(feature = "functions")]
+/// Contains API for function calling
+pub mod functions;
 /// The prelude module. Import everything from it to get the necessary elements from this library
 pub mod prelude;
 /// Types returned from the API and sent to it
 pub mod types;
-#[cfg(feature = "functions")]
-/// Contains API for function calling
-pub mod functions;
 
 /// Result that is returned from most ChatGPT functions
 pub type Result<T> = std::result::Result<T, err::Error>;
