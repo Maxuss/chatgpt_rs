@@ -1,10 +1,10 @@
 use crate::functions::{CallableAsyncFunction, FunctionArgument};
+use async_trait::async_trait;
 use schemars::schema_for;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
-use std::marker::PhantomData;
-use async_trait::async_trait;
 use serde_json::Value;
+use std::marker::PhantomData;
 
 /// A descriptor containing information about a ChatGPT function
 #[derive(Debug, Clone)]
@@ -42,7 +42,11 @@ pub trait GptFunctionHolder: Send + Sync {
 
 /// This struct represents a ChatGPT function.
 #[derive(Debug, Clone)]
-pub struct GptFunction<A: FunctionArgument, C: CallableAsyncFunction<A>> where A: Send + Sync, C: Send + Sync {
+pub struct GptFunction<A: FunctionArgument, C: CallableAsyncFunction<A>>
+where
+    A: Send + Sync,
+    C: Send + Sync,
+{
     /// Descriptor for this function. See [FunctionDescriptor] fields for details
     pub descriptor: FunctionDescriptor<A>,
     /// Phantom data used for referencing the handler for this function. See [CallableAsyncFunction] for details.
@@ -50,7 +54,9 @@ pub struct GptFunction<A: FunctionArgument, C: CallableAsyncFunction<A>> where A
 }
 
 #[async_trait]
-impl<A: FunctionArgument + Send + Sync, C: CallableAsyncFunction<A> + Send + Sync> GptFunctionHolder for GptFunction<A, C> {
+impl<A: FunctionArgument + Send + Sync, C: CallableAsyncFunction<A> + Send + Sync> GptFunctionHolder
+    for GptFunction<A, C>
+{
     async fn try_invoke(&self, args: &str) -> crate::Result<Value> {
         let args_value: A = serde_json::from_str(args).map_err(crate::err::Error::from)?;
         C::invoke(args_value).await
@@ -63,7 +69,7 @@ pub enum FunctionCallingMode {
     /// ChatGPT automatically determines if it should call a function
     Auto,
     /// ChatGPT does not call any functions
-    None
+    None,
 }
 
 /// Determines how this client will validate function calls.
@@ -82,6 +88,5 @@ pub struct FunctionCall {
     /// Name of the function attempted to call
     pub name: String,
     /// Arguments used to call this function, represented by a stringified JSON Object
-    pub arguments: String
+    pub arguments: String,
 }
-

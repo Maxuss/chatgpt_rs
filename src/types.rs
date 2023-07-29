@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "functions")]
 use crate::functions::FunctionCall;
+use serde::{Deserialize, Serialize};
 
 /// A role of a message sender, can be:
 /// - `System`, for starting system message, that sets the tone of model
@@ -56,7 +56,7 @@ impl ChatMessage {
                         role,
                         content: String::new(),
                         #[cfg(feature = "functions")]
-                        function_call: None
+                        function_call: None,
                     };
                     result.push(msg);
                 }
@@ -90,7 +90,7 @@ pub struct CompletionRequest<'a> {
     /// All functions that can be called by ChatGPT
     #[cfg(feature = "functions")]
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub functions: &'a Vec<serde_json::Value>
+    pub functions: &'a Vec<serde_json::Value>,
 }
 
 /// Represents a response from the API

@@ -1,8 +1,8 @@
 use std::{fmt::Display, str::FromStr};
 
-use derive_builder::Builder;
 #[cfg(feature = "functions")]
 use crate::functions::FunctionValidationStrategy;
+use derive_builder::Builder;
 
 /// The struct containing main configuration for the ChatGPT API
 #[derive(Debug, Clone, PartialEq, PartialOrd, Builder)]
@@ -24,7 +24,7 @@ pub struct ModelConfiguration {
     pub api_url: url::Url,
     /// Strategy for function validation strategy. Whenever ChatGPT fails to call a function correctly, this strategy is applied.
     #[cfg(feature = "functions")]
-    pub function_validation: FunctionValidationStrategy
+    pub function_validation: FunctionValidationStrategy,
 }
 
 impl Default for ModelConfiguration {
@@ -38,7 +38,7 @@ impl Default for ModelConfiguration {
             reply_count: 1,
             api_url: url::Url::from_str("https://api.openai.com/v1/chat/completions").unwrap(),
             #[cfg(feature = "functions")]
-            function_validation: FunctionValidationStrategy::default()
+            function_validation: FunctionValidationStrategy::default(),
         }
     }
 }

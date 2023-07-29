@@ -8,12 +8,12 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 #[cfg(feature = "streams")]
+use reqwest::Response;
+#[cfg(feature = "streams")]
 use {
     crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
     crate::types::ResponseChunk, futures_util::Stream,
 };
-#[cfg(feature = "streams")]
-use reqwest::Response;
 
 use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
@@ -21,7 +21,6 @@ use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, Ser
 
 #[cfg(feature = "functions")]
 use crate::functions::{FunctionArgument, FunctionDescriptor};
-
 
 /// The client that operates the ChatGPT API
 #[derive(Debug, Clone)]
@@ -161,7 +160,7 @@ impl ChatGPT {
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
                 #[cfg(feature = "functions")]
-                functions: &Vec::new()
+                functions: &Vec::new(),
             })
             .send()
             .await?
@@ -201,7 +200,7 @@ impl ChatGPT {
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
                 #[cfg(feature = "functions")]
-                functions: &Vec::new()
+                functions: &Vec::new(),
             })
             .send()
             .await?;
@@ -223,7 +222,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None
+                    function_call: None,
                 }],
                 stream: false,
                 temperature: self.config.temperature,
@@ -232,7 +231,7 @@ impl ChatGPT {
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
                 #[cfg(feature = "functions")]
-                functions: &Vec::new()
+                functions: &Vec::new(),
             })
             .send()
             .await?
@@ -265,7 +264,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None
+                    function_call: None,
                 }],
                 stream: true,
                 temperature: self.config.temperature,
@@ -274,7 +273,7 @@ impl ChatGPT {
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
                 #[cfg(feature = "functions")]
-                functions: &Vec::new()
+                functions: &Vec::new(),
             })
             .send()
             .await?;
@@ -330,9 +329,17 @@ impl ChatGPT {
     pub async fn send_message_functions<S: Into<String>, A: FunctionArgument>(
         &self,
         message: S,
-        functions: Vec<FunctionDescriptor<A>>
+        functions: Vec<FunctionDescriptor<A>>,
     ) -> crate::Result<CompletionResponse> {
-        self.send_message_functions_baked(message, functions.into_iter().map(serde_json::to_value).collect::<serde_json::Result<Vec<serde_json::Value>>>().map_err(crate::err::Error::from)?).await
+        self.send_message_functions_baked(
+            message,
+            functions
+                .into_iter()
+                .map(serde_json::to_value)
+                .collect::<serde_json::Result<Vec<serde_json::Value>>>()
+                .map_err(crate::err::Error::from)?,
+        )
+        .await
     }
 
     /// Sends a message with specified pre-baked function descriptors. ChatGPT is then able to call these functions.
@@ -343,7 +350,7 @@ impl ChatGPT {
     pub async fn send_message_functions_baked<S: Into<String>>(
         &self,
         message: S,
-        baked_functions: Vec<serde_json::Value>
+        baked_functions: Vec<serde_json::Value>,
     ) -> crate::Result<CompletionResponse> {
         let response: ServerResponse = self
             .client
@@ -354,7 +361,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None
+                    function_call: None,
                 }],
                 stream: false,
                 temperature: self.config.temperature,
@@ -363,7 +370,7 @@ impl ChatGPT {
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
                 #[cfg(feature = "functions")]
-                functions: &baked_functions
+                functions: &baked_functions,
             })
             .send()
             .await?
@@ -384,7 +391,7 @@ impl ChatGPT {
     pub async fn send_history_functions(
         &self,
         history: &Vec<ChatMessage>,
-        functions: &Vec<serde_json::Value>
+        functions: &Vec<serde_json::Value>,
     ) -> crate::Result<CompletionResponse> {
         let response: ServerResponse = self
             .client
@@ -398,7 +405,7 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
-                functions
+                functions,
             })
             .send()
             .await?

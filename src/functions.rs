@@ -18,11 +18,11 @@ pub use gpt_fn_macros::*;
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
     use crate::functions::FunctionDescriptor;
     use schemars::JsonSchema;
     use serde::Deserialize;
     use serde_json::json;
+    use std::marker::PhantomData;
 
     #[test]
     pub fn test_descriptor_serialization() {
@@ -37,7 +37,7 @@ mod tests {
         let test_descriptor = FunctionDescriptor {
             name: "test_descriptor",
             description: "Used for testing descriptor serialization",
-            parameters: PhantomData::<TestArguments>
+            parameters: PhantomData::<TestArguments>,
         };
 
         let value = serde_json::to_value(test_descriptor).unwrap();

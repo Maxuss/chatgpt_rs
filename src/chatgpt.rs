@@ -26,11 +26,7 @@ pub mod test {
 
     use futures::StreamExt;
 
-    use crate::{
-        client::ChatGPT,
-        config::ModelConfiguration,
-        types::ResponseChunk,
-    };
+    use crate::{client::ChatGPT, config::ModelConfiguration, types::ResponseChunk};
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {
