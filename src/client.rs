@@ -332,7 +332,7 @@ impl ChatGPT {
         message: S,
         functions: Vec<FunctionDescriptor<A>>
     ) -> crate::Result<CompletionResponse> {
-        self.send_message_functions_baked(message, functions.into_iter().map(|each| serde_json::to_value(each)).collect::<serde_json::Result<Vec<serde_json::Value>>>().map_err(crate::err::Error::from)?).await
+        self.send_message_functions_baked(message, functions.into_iter().map(serde_json::to_value).collect::<serde_json::Result<Vec<serde_json::Value>>>().map_err(crate::err::Error::from)?).await
     }
 
     /// Sends a message with specified pre-baked function descriptors. ChatGPT is then able to call these functions.

@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use std::path::Path;
-use thiserror::Error;
 
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -8,6 +6,10 @@ use tokio::{fs::File, io::AsyncWriteExt};
 use {crate::types::ResponseChunk, futures::Stream};
 #[cfg(feature = "functions")]
 use crate::functions::{CallableAsyncFunction, FunctionArgument, FunctionCall, FunctionValidationStrategy, GptFunction, GptFunctionHolder};
+#[cfg(feature = "functions")]
+use std::collections::HashMap;
+#[cfg(feature = "functions")]
+use thiserror::Error;
 
 use crate::{
     client::ChatGPT,
@@ -208,7 +210,7 @@ impl Conversation {
     }
 
     #[cfg(not(feature = "functions"))]
-    async fn process_possible_function_response(&mut self, message: &ChatMessage) -> Option<CompletionResponse> {
+    async fn process_possible_function_response(&mut self, _message: &ChatMessage) -> Option<CompletionResponse> {
         None
     }
 
@@ -250,9 +252,9 @@ impl Conversation {
 
         if self.client.config.function_validation == FunctionValidationStrategy::Strict {
             // Sending error response from function
-            return Some(self.send_role_message(Role::System, call_result.unwrap_err().to_string()).await);
+            Some(self.send_role_message(Role::System, call_result.unwrap_err().to_string()).await)
         } else {
-            return None
+            None
         }
     }
 }

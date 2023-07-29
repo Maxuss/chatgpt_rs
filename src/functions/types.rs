@@ -53,8 +53,7 @@ pub struct GptFunction<A: FunctionArgument, C: CallableAsyncFunction<A>> where A
 impl<A: FunctionArgument + Send + Sync, C: CallableAsyncFunction<A> + Send + Sync> GptFunctionHolder for GptFunction<A, C> {
     async fn try_invoke(&self, args: &str) -> crate::Result<Value> {
         let args_value: A = serde_json::from_str(args).map_err(crate::err::Error::from)?;
-        let value = C::invoke(args_value).await;
-        value
+        C::invoke(args_value).await
     }
 }
 
