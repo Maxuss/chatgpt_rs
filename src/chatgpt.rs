@@ -28,7 +28,7 @@ pub mod test {
 
     use crate::{
         client::ChatGPT,
-        config::{ChatGPTEngine, ModelConfiguration},
+        config::ModelConfiguration,
         types::ResponseChunk,
     };
 

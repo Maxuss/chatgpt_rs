@@ -27,15 +27,22 @@ pub fn process_fn_macro(
     let args_struct = build_arguments_struct(&input, &docs);
     let callable_struct = build_callable_struct(&input);
     let descriptor = build_function_descriptor(&input, &docs);
+    let function_module_name = syn::Ident::new(&format!("__{}_data", input.sig.ident), input.span());
     (quote_spanned!(input.span() =>
-        #args_struct
-        #callable_struct
+        #[doc(hidden)]
+        #[allow(missing_docs)]
+        mod #function_module_name {
+            #args_struct
+            #callable_struct
+        }
 
+        use #function_module_name::*;
         #sig {
             use chatgpt::functions::*;
 
             #descriptor
-        })).into()
+        }
+    )).into()
 }
 
 fn build_callable_struct(input: &ItemFn) -> proc_macro2::TokenStream {
@@ -46,17 +53,17 @@ fn build_callable_struct(input: &ItemFn) -> proc_macro2::TokenStream {
     let aname = syn::Ident::new(&format!("__{fname}_FunctionArguments"), input.sig.ident.span());
 
     quote_spanned!(input.span() =>
-        use chatgpt::functions::async_trait::async_trait as __async_trait;
-
         #[doc(hidden)]
+        #[allow(non_camel_case_types, missing_docs)]
         #[derive(Debug, Copy, Clone)]
-        struct #name;
+        pub struct #name;
 
-        #[__async_trait]
+        #[chatgpt::functions::async_trait::async_trait]
         impl chatgpt::functions::CallableAsyncFunction<#aname> for #name {
-            async fn invoke(arguments: #aname) {
+            async fn invoke(arguments: #aname) -> chatgpt::Result<chatgpt::functions::serde_json::Value> {
                 #deconstructed_args
-                #body
+                let result = #body;
+                chatgpt::functions::serde_json::to_value(&result).map_err(chatgpt::err::Error::from)
             }
         }
     )
@@ -85,11 +92,10 @@ fn build_arguments_struct(input: &ItemFn, docs: &FunctionDocs) -> proc_macro2::T
     let name = &input.sig.ident;
     let name = syn::Ident::new(&format!("__{name}_FunctionArguments"), input.sig.ident.span());
     quote! {
-        use chatgpt::functions::schema as schemars;
+        use chatgpt::functions::schemars;
 
-        #[allow(non_camel_case_types)]
-        #[allow(missing_docs)]
-        #[derive(chatgpt::functions::serde::Deserialize, chatgpt::functions::schema::JsonSchema, Debug, Clone)]
+        #[allow(non_camel_case_types, missing_docs)]
+        #[derive(chatgpt::functions::serde::Deserialize, chatgpt::functions::schemars::JsonSchema, Debug, Clone)]
         #[doc(hidden)]
         pub struct #name {
             #args
@@ -102,7 +108,7 @@ fn prepare_struct_args(input: &ItemFn, docs: &FunctionDocs) -> proc_macro2::Toke
     let span = input.span();
     let fields = deconstructed.into_iter().map(|(name, ty, stream)| {
         let docs = docs.parameter_docs.get(&name).unwrap_or(&name);
-        let literal = syn::Lit::Str(LitStr::new(docs, span));
+        let literal = Lit::Str(LitStr::new(docs, span));
         let doc_attr = quote_spanned!(span => #[doc = #literal]);
         quote_spanned!(span => #doc_attr #stream: #ty)
     });
@@ -117,9 +123,8 @@ fn rebuild_fn_sig(input: &ItemFn) -> proc_macro2::TokenStream {
 
     other_sig.asyncness = None;
     other_sig.constness = None;
-    other_sig.generics.params.push(parse_quote!('a));
     other_sig.inputs.clear();
-    other_sig.output = ReturnType::Type(RArrow::default(), parse_quote!(chatgpt::functions::GptFunction<'a, #name, #callable_name>));
+    other_sig.output = ReturnType::Type(RArrow::default(), parse_quote!(chatgpt::functions::GptFunction<#name, #callable_name>));
     quote_spanned!(other_sig.span() => #other_sig)
 }
 

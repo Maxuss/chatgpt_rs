@@ -8,9 +8,11 @@ pub use types::*;
 #[doc(hidden)]
 pub use async_trait;
 #[doc(hidden)]
-pub use schemars as schema;
+pub use schemars;
 #[doc(hidden)]
 pub use serde;
+#[doc(hidden)]
+pub use serde_json;
 
 pub use gpt_fn_macros::*;
 
@@ -44,7 +46,6 @@ mod tests {
                 "description": "Used for testing descriptor serialization",
                 "name": "test_descriptor",
                 "parameters": {
-                    "$schema": "http://json-schema.org/draft-07/schema#", // schemars shenanigans
                     "properties": {
                         "age": {
                             "description": "Some example age",
