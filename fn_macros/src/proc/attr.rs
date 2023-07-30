@@ -32,6 +32,7 @@ pub fn process_fn_macro(
         #[doc(hidden)]
         #[allow(missing_docs)]
         mod #function_module_name {
+            use super::*;
             #args_struct
             #callable_struct
         }

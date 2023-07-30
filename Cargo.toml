@@ -38,7 +38,8 @@ async-recursion = { version = "1.0.4", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
-chatgpt_rs = { path = ".", features = ["json", "streams", "postcard"] }
+chatgpt_rs = { path = ".", features = ["json", "streams", "postcard", "functions"] }
+lazy_static = "1.4.0"
 
 [features]
 default = ["json"]

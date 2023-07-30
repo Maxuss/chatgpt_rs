@@ -7,4 +7,4 @@ pub use crate::types::{ChatMessage, MessageChoice, TokenUsage};
 pub use crate::Result;
 pub use url::Url;
 #[cfg(feature = "functions")]
-pub use crate::functions::gpt_function;
+pub use crate::functions::{gpt_function, FunctionValidationStrategy};
