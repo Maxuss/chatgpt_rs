@@ -1,13 +1,13 @@
-use std::env::args;
+use chatgpt::prelude::*;
 use lazy_static::lazy_static;
 use serde::Serialize;
-use chatgpt::prelude::*;
+use std::env::args;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 enum FunctionResult {
     Success,
-    Failure
+    Failure,
 }
 
 // Lazy global state
@@ -44,7 +44,8 @@ async fn main() -> Result<()> {
         key,
         ModelConfigurationBuilder::default()
             .function_validation(FunctionValidationStrategy::Strict)
-            .build().unwrap()
+            .build()
+            .unwrap(),
     )?;
     let mut conv = client.new_conversation();
 
@@ -52,7 +53,9 @@ async fn main() -> Result<()> {
     conv.add_function(send_message())?;
 
     // Sending message with function
-    let response = conv.send_message_functions("Could you please send a test message to user `maxus`?").await?;
+    let response = conv
+        .send_message_functions("Could you please send a test message to user `maxus`?")
+        .await?;
 
     println!("Response: {}", response.message().content);
 
