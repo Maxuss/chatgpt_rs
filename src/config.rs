@@ -1,5 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
+#[cfg(feature = "functions")]
+use crate::functions::FunctionValidationStrategy;
 use derive_builder::Builder;
 
 /// The struct containing main configuration for the ChatGPT API
@@ -12,6 +14,8 @@ pub struct ModelConfiguration {
     pub temperature: f32,
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
+    /// Controls the maximum number of tokens to generate in the completion
+    pub max_tokens: u32,
     /// Determines how much to penalize new tokens pased on their existing presence so far
     pub presence_penalty: f32,
     /// Determines how much to penalize new tokens based on their existing frequency so far
@@ -20,6 +24,9 @@ pub struct ModelConfiguration {
     pub reply_count: u32,
     /// URL of the /v1/chat/completions endpoint. Can be used to set a proxy
     pub api_url: url::Url,
+    /// Strategy for function validation strategy. Whenever ChatGPT fails to call a function correctly, this strategy is applied.
+    #[cfg(feature = "functions")]
+    pub function_validation: FunctionValidationStrategy,
 }
 
 impl Default for ModelConfiguration {
@@ -28,10 +35,13 @@ impl Default for ModelConfiguration {
             engine: Default::default(),
             temperature: 0.5,
             top_p: 1.0,
+            max_tokens: 16,
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
             api_url: url::Url::from_str("https://api.openai.com/v1/chat/completions").unwrap(),
+            #[cfg(feature = "functions")]
+            function_validation: FunctionValidationStrategy::default(),
         }
     }
 }
