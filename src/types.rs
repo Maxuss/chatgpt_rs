@@ -1,3 +1,5 @@
+#[cfg(feature = "functions")]
+use crate::functions::FunctionCall;
 use serde::{Deserialize, Serialize};
 
 /// A role of a message sender, can be:
@@ -13,6 +15,8 @@ pub enum Role {
     Assistant,
     /// A message sent by the user
     User,
+    /// A message related to ChatGPT functions. Does not have much use without the `functions` feature.
+    Function,
 }
 
 /// Container for the sent/received ChatGPT messages
@@ -22,6 +26,10 @@ pub struct ChatMessage {
     pub role: Role,
     /// Actual content of the message
     pub content: String,
+    /// Possibly function call that was attempted by the API.
+    #[cfg(feature = "functions")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_call: Option<FunctionCall>,
 }
 
 impl ChatMessage {
@@ -47,6 +55,8 @@ impl ChatMessage {
                     let msg = ChatMessage {
                         role,
                         content: String::new(),
+                        #[cfg(feature = "functions")]
+                        function_call: None,
                     };
                     result.push(msg);
                 }
@@ -58,7 +68,7 @@ impl ChatMessage {
 }
 
 /// A request struct sent to the API to request a message completion
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CompletionRequest<'a> {
     /// The model to be used, currently `gpt-3.5-turbo`, but may change in future
     pub model: &'a str,
@@ -70,6 +80,8 @@ pub struct CompletionRequest<'a> {
     pub temperature: f32,
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
+    /// Controls the maximum number of tokens to generate in the completion
+    pub max_tokens: u32,
     /// Determines how much to penalize new tokens based on their existing frequency so far
     pub frequency_penalty: f32,
     /// Determines how much to penalize new tokens pased on their existing presence so far
@@ -77,6 +89,10 @@ pub struct CompletionRequest<'a> {
     /// Determines the amount of output responses
     #[serde(rename = "n")]
     pub reply_count: u32,
+    /// All functions that can be called by ChatGPT
+    #[cfg(feature = "functions")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub functions: &'a Vec<serde_json::Value>,
 }
 
 /// Represents a response from the API
