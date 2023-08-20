@@ -5,7 +5,7 @@ It supports conversations, message persistence and ChatGPT functions.
 
 ## Regarding ChatGPT Functions
 
-The function API is currently experimental and *may* not work as intended. 
+The function API (available in `v1.2.0+`) is currently experimental and *may* not work as intended. 
 If you encounter any issues or undefined behaviour, please, create an issue in this repository!
 
 ## Usage
