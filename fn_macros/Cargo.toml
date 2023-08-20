@@ -2,6 +2,10 @@
 name = "gpt_fn_macros"
 version = "1.0.0"
 edition = "2021"
+description = "Macros for the ChatGPT-rs crate"
+authors = ["Maxuss <maxus.info.mail@proton.me>"]
+license = "MIT"
+repository = "https://github.com/Maxuss/chatgpt_rs"
 
 [lib]
 proc-macro = true
