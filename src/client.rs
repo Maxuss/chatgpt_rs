@@ -373,6 +373,7 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                max_tokens: self.config.max_tokens,
                 #[cfg(feature = "functions")]
                 functions: &baked_functions,
             })
@@ -409,6 +410,7 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                max_tokens: self.config.max_tokens,
                 functions,
             })
             .send()
