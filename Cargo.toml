@@ -64,3 +64,7 @@ functions_extra = [
 ]
 json = ["dep:serde_json", "tokio/fs"]
 postcard = ["dep:postcard", "tokio/fs"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
