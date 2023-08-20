@@ -133,4 +133,20 @@ pub mod test {
         assert_eq!(collected.last().unwrap().to_owned(), ResponseChunk::Done);
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_max_token_config() -> crate::Result<()> {
+        let client = ChatGPT::new_with_config(
+            std::env::var("TEST_API_KEY")?,
+            ModelConfiguration {
+                max_tokens: 10,
+                ..Default::default()
+            },
+        )?;
+        let response = client
+            .send_message("Could you give me names of three popular Rust web frameworks?")
+            .await?;
+        assert_eq!( response.message_choices.first().unwrap().finish_reason, "length".to_string());
+        Ok(())
+    }
 }
