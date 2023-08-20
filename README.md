@@ -1,6 +1,12 @@
 # ChatGPT-rs
 
-This library has now been rewritten to use official OpenAI's ChatGPT API, instead of other unofficial workarounds.
+This library is an asynchronous Rust wrapper over the OpenAI ChatGPT API.
+It supports conversations, message persistence and ChatGPT functions.
+
+## Regarding ChatGPT Functions
+
+The function API is currently experimental and *may* not work as intended. 
+If you encounter any issues or undefined behaviour, please, create an issue in this repository!
 
 ## Usage
 
