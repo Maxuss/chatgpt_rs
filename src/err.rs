@@ -16,12 +16,12 @@ pub enum Error {
     #[error("Parsing error has occurred: {0}")]
     ParsingError(String),
     /// A serde-provoked JSON error has occurred
-    #[cfg(feature = "json")]
+    #[cfg(any(feature = "json", feature = "functions"))]
     #[error("Failed to (de)serialize data: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
-    #[cfg(feature = "postcard")]
     /// A postcard-provoked error has occurred
     #[error("Failed to (de)serialize data: {0}")]
+    #[cfg(feature = "postcard")]
     PostcardError(#[from] postcard::Error),
     /// An error has occurred when parsing a string from UTF-8 bytes
     #[error("Failed to parse string from UTF-8: {0}")]

@@ -9,6 +9,9 @@ pub mod config;
 pub mod converse;
 /// This module contains the errors related to the API
 pub mod err;
+#[cfg(feature = "functions")]
+/// Contains API for function calling
+pub mod functions;
 /// The prelude module. Import everything from it to get the necessary elements from this library
 pub mod prelude;
 /// Types returned from the API and sent to it
@@ -23,11 +26,7 @@ pub mod test {
 
     use futures::StreamExt;
 
-    use crate::{
-        client::ChatGPT,
-        config::{ChatGPTEngine, ModelConfiguration},
-        types::ResponseChunk,
-    };
+    use crate::{client::ChatGPT, config::ModelConfiguration, types::ResponseChunk};
 
     #[tokio::test]
     async fn test_client() -> crate::Result<()> {

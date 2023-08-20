@@ -31,10 +31,15 @@ postcard = { version = "1.0.4", features = ["alloc"], optional = true }
 eventsource-stream = { version = "0.2.3", optional = true }
 futures = { version = "0.3.28", optional = true }
 futures-util = { version = "0.3.28", optional = true }
+gpt_fn_macros = { path = "./fn_macros", optional = true }
+schemars = { version = "0.8.12", optional = true }
+async-trait = { version = "0.1.72", optional = true }
+async-recursion = { version = "1.0.4", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
-chatgpt_rs = { path = ".", features = ["json", "streams", "postcard"] }
+chatgpt_rs = { path = ".", features = ["json", "streams", "postcard", "functions"] }
+lazy_static = "1.4.0"
 
 [features]
 default = ["json"]
@@ -43,6 +48,19 @@ streams = [
     "dep:futures-util",
     "dep:futures",
     "reqwest/stream",
+]
+functions = [
+    "dep:gpt_fn_macros",
+    "dep:schemars",
+    "dep:async-trait",
+    "dep:serde_json",
+    "dep:async-recursion"
+]
+functions_extra = [
+    "schemars/chrono",
+    "schemars/url",
+    "schemars/uuid1",
+    "schemars/either"
 ]
 json = ["dep:serde_json", "tokio/fs"]
 postcard = ["dep:postcard", "tokio/fs"]

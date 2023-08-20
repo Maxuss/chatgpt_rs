@@ -1,6 +1,12 @@
 # ChatGPT-rs
 
-This library has now been rewritten to use official OpenAI's ChatGPT API, instead of other unofficial workarounds.
+This library is an asynchronous Rust wrapper over the OpenAI ChatGPT API.
+It supports conversations, message persistence and ChatGPT functions.
+
+## Regarding ChatGPT Functions
+
+The function API is currently experimental and *may* not work as intended. 
+If you encounter any issues or undefined behaviour, please, create an issue in this repository!
 
 ## Usage
 
@@ -146,6 +152,90 @@ while let Some(chunk) = stream.next().await {
 let messages = ChatMessage::from_response_chunks(output);
 conversation.history.push(messages[0].to_owned());
 ```
+
+## Function Calls
+
+ChatGPT-rs supports function calling API. Requires the `functions` feature.
+
+You can define functions with the `gpt_function` attribute macro, like this:
+
+```rust
+use chatgpt::prelude::*;
+
+/// Says hello to a user
+/// 
+/// * user_name - Name of the user to greet
+#[gpt_function]
+async fn say_hello(user_name: String) {
+    println!("Hello, {user_name}!")
+}
+
+// ... within your conversation, before sending first message
+let mut conversation = client.new_conversation();
+// note that you need to call the function when adding it
+conversation.add_function(say_hello());
+let response = conversation
+    .send_message_functions("Could you greet user with name `maxus`?")
+    .await?;
+// At this point, if function call was issued it was already processed
+// and subsequent response was sent
+```
+
+As you can see, GPT functions must have a description so the model knows when to call them and what they do. 
+In ChatGPT-rs function descriptions are represented as simple rust docs.
+Each argument is documented as `* {argument name} - {argument description}`.
+Function arguments are processed from JSON, so as long as they implement `schemars::JsonSchema` 
+and `serde::Deserialize` they will be parsed correctly.
+
+By default, ChatGPT-rs uses minimal `schemars` features, enable feature `functions_extra` to add support for
+`uuid`, `chrono`, `url` and `either`, or define your own structure and derive `schemars::JsonSchema` and `serde::Deserialize`:
+
+```rust
+use schemars::JsonSchema;
+use serde::Deserialize;
+
+#[derive(JsonSchema, Deserialize)]
+struct Args {
+    /// Name of the user
+    user_name: String,
+    /// New age of the user
+    user_age: u16
+}
+
+/// Wishes happy birthday to the user
+/// 
+/// * args - Arguments
+#[gpt_function]
+async fn happy_birthday(args: Args) {
+    println!("Hello, {}, You are now {}!", args.user_name, args.user_age);
+}
+```
+
+Functions can also return any data (as long as it implements `serde::Serialize`) and it will be returned to the model.
+
+```rust
+/// Does some heavy computations and returns result
+/// 
+/// * input - Input data as vector of floats
+#[gpt_function]
+async fn do_heavy_computation(input: Vec<f64>) -> Vec<f64> {
+    let output: Vec<f64> = // ... Do something with the input ...  
+    return output;
+}
+```
+
+By default, functions are only sent to API by calling the `send_message_functions` method. 
+If you wish to enable automatic function sending with each message, you can set the `always_send_functions` property within `Conversation` to true.
+
+Current function limitations are:
+* They must be async.
+* Since they are counted as tokens, you might want to limit function sending and/or their description length.
+
+### Function Call Validation
+
+[As stated in the official ChatGPT documentation](https://platform.openai.com/docs/guides/gpt/function-calling), ChatGPT may hallucinate nonexistent functions
+or provide invalid JSON. To mitigate it, ChatGPT-rs provides `FunctionValidationStrategy`. If set to `Strict` within [the client model configuration](https://docs.rs/chatgpt_rs/latest/chatgpt/config/struct.ModelConfiguration.html),
+a system message will be sent to the model correcting it whenever it fails to call function correctly.
 
 ## Conversation Persistence
 

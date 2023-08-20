@@ -2,13 +2,13 @@ use std::path::Path;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
-#[cfg(feature = "streams")]
-use reqwest::Response;
 use reqwest::{self, Proxy};
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+#[cfg(feature = "streams")]
+use reqwest::Response;
 #[cfg(feature = "streams")]
 use {
     crate::types::InboundChunkPayload, crate::types::InboundResponseChunk,
@@ -18,6 +18,9 @@ use {
 use crate::config::ModelConfiguration;
 use crate::converse::Conversation;
 use crate::types::{ChatMessage, CompletionRequest, CompletionResponse, Role, ServerResponse};
+
+#[cfg(feature = "functions")]
+use crate::functions::{FunctionArgument, FunctionDescriptor};
 
 /// The client that operates the ChatGPT API
 #[derive(Debug, Clone)]
@@ -157,6 +160,8 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                #[cfg(feature = "functions")]
+                functions: &Vec::new(),
             })
             .send()
             .await?
@@ -196,6 +201,8 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                #[cfg(feature = "functions")]
+                functions: &Vec::new(),
             })
             .send()
             .await?;
@@ -216,6 +223,8 @@ impl ChatGPT {
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
+                    #[cfg(feature = "functions")]
+                    function_call: None,
                 }],
                 stream: false,
                 temperature: self.config.temperature,
@@ -224,6 +233,8 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                #[cfg(feature = "functions")]
+                functions: &Vec::new(),
             })
             .send()
             .await?
@@ -255,6 +266,8 @@ impl ChatGPT {
                 messages: &vec![ChatMessage {
                     role: Role::User,
                     content: message.into(),
+                    #[cfg(feature = "functions")]
+                    function_call: None,
                 }],
                 stream: true,
                 temperature: self.config.temperature,
@@ -263,6 +276,8 @@ impl ChatGPT {
                 frequency_penalty: self.config.frequency_penalty,
                 presence_penalty: self.config.presence_penalty,
                 reply_count: self.config.reply_count,
+                #[cfg(feature = "functions")]
+                functions: &Vec::new(),
             })
             .send()
             .await?;
@@ -308,5 +323,104 @@ impl ChatGPT {
                 })
             })
             .map_err(crate::err::Error::from)
+    }
+
+    /// Sends a message with specified function descriptors. ChatGPT is then able to call these functions.
+    ///
+    /// **NOTE**: Functions are processed [as tokens on the backend](https://platform.openai.com/docs/guides/gpt/function-calling),
+    /// so you might want to limit the amount of functions or their description.
+    #[cfg(feature = "functions")]
+    pub async fn send_message_functions<S: Into<String>, A: FunctionArgument>(
+        &self,
+        message: S,
+        functions: Vec<FunctionDescriptor<A>>,
+    ) -> crate::Result<CompletionResponse> {
+        self.send_message_functions_baked(
+            message,
+            functions
+                .into_iter()
+                .map(serde_json::to_value)
+                .collect::<serde_json::Result<Vec<serde_json::Value>>>()
+                .map_err(crate::err::Error::from)?,
+        )
+        .await
+    }
+
+    /// Sends a message with specified pre-baked function descriptors. ChatGPT is then able to call these functions.
+    ///
+    /// **NOTE**: Functions are processed [as tokens on the backend](https://platform.openai.com/docs/guides/gpt/function-calling),
+    /// so you might want to limit the amount of functions or their description.
+    #[cfg(feature = "functions")]
+    pub async fn send_message_functions_baked<S: Into<String>>(
+        &self,
+        message: S,
+        baked_functions: Vec<serde_json::Value>,
+    ) -> crate::Result<CompletionResponse> {
+        let response: ServerResponse = self
+            .client
+            .post(self.config.api_url.clone())
+            .json(&CompletionRequest {
+                model: self.config.engine.as_ref(),
+                messages: &vec![ChatMessage {
+                    role: Role::User,
+                    content: message.into(),
+                    #[cfg(feature = "functions")]
+                    function_call: None,
+                }],
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
+                #[cfg(feature = "functions")]
+                functions: &baked_functions,
+            })
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        match response {
+            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
+                message: error.message,
+                error_type: error.error_type,
+            }),
+            ServerResponse::Completion(completion) => Ok(completion),
+        }
+    }
+
+    /// Sends whole message history alongside with defined baked functions.
+    #[cfg(feature = "functions")]
+    pub async fn send_history_functions(
+        &self,
+        history: &Vec<ChatMessage>,
+        functions: &Vec<serde_json::Value>,
+    ) -> crate::Result<CompletionResponse> {
+        let response: ServerResponse = self
+            .client
+            .post(self.config.api_url.clone())
+            .json(&CompletionRequest {
+                model: self.config.engine.as_ref(),
+                messages: history,
+                stream: false,
+                temperature: self.config.temperature,
+                top_p: self.config.top_p,
+                frequency_penalty: self.config.frequency_penalty,
+                presence_penalty: self.config.presence_penalty,
+                reply_count: self.config.reply_count,
+                functions,
+            })
+            .send()
+            .await?
+            .json()
+            .await?;
+        match response {
+            ServerResponse::Error { error } => Err(crate::err::Error::BackendError {
+                message: error.message,
+                error_type: error.error_type,
+            }),
+            ServerResponse::Completion(completion) => Ok(completion),
+        }
     }
 }
