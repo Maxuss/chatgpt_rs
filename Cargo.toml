@@ -1,6 +1,6 @@
 [package]
 name = "chatgpt_rs"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "ChatGPT API Wrapper"
 authors = ["Maxuss <maxus.info.mail@proton.me>"]
@@ -38,7 +38,12 @@ async-recursion = { version = "1.0.4", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.31.0", features = ["macros", "rt-multi-thread"] }
-chatgpt_rs = { path = ".", features = ["json", "streams", "postcard", "functions"] }
+chatgpt_rs = { path = ".", features = [
+    "json",
+    "streams",
+    "postcard",
+    "functions",
+] }
 lazy_static = "1.4.0"
 
 [features]
@@ -54,13 +59,13 @@ functions = [
     "dep:schemars",
     "dep:async-trait",
     "dep:serde_json",
-    "dep:async-recursion"
+    "dep:async-recursion",
 ]
 functions_extra = [
     "schemars/chrono",
     "schemars/url",
     "schemars/uuid1",
-    "schemars/either"
+    "schemars/either",
 ]
 json = ["dep:serde_json", "tokio/fs"]
 postcard = ["dep:postcard", "tokio/fs"]

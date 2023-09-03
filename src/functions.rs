@@ -27,6 +27,7 @@ mod tests {
     #[test]
     pub fn test_descriptor_serialization() {
         #[derive(Deserialize, JsonSchema)]
+        #[allow(dead_code)]
         struct TestArguments {
             /// Some example name
             name: String,
