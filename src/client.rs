@@ -3,7 +3,6 @@ use std::path::Path;
 use reqwest::header::AUTHORIZATION;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{self, Proxy};
-use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
@@ -54,7 +53,7 @@ impl ChatGPT {
         );
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
-            .timeout(Duration::from_secs(10))
+            .timeout(config.timeout)
             .build()?;
         Ok(Self { client, config })
     }
@@ -74,7 +73,7 @@ impl ChatGPT {
 
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
-            .timeout(Duration::from_secs(10))
+            .timeout(config.timeout)
             .proxy(proxy)
             .build()?;
         Ok(Self { client, config })

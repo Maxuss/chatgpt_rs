@@ -1,4 +1,5 @@
 use std::{fmt::Display, str::FromStr};
+use std::time::Duration;
 
 #[cfg(feature = "functions")]
 use crate::functions::FunctionValidationStrategy;
@@ -10,13 +11,13 @@ use derive_builder::Builder;
 pub struct ModelConfiguration {
     /// The GPT version used.
     pub engine: ChatGPTEngine,
-    /// Controls randomness of the output. Higher valeus means more random
+    /// Controls randomness of the output. Higher values means more random
     pub temperature: f32,
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
     /// Controls the maximum number of tokens to generate in the completion
     pub max_tokens: u32,
-    /// Determines how much to penalize new tokens pased on their existing presence so far
+    /// Determines how much to penalize new tokens passed on their existing presence so far
     pub presence_penalty: f32,
     /// Determines how much to penalize new tokens based on their existing frequency so far
     pub frequency_penalty: f32,
@@ -24,6 +25,8 @@ pub struct ModelConfiguration {
     pub reply_count: u32,
     /// URL of the /v1/chat/completions endpoint. Can be used to set a proxy
     pub api_url: url::Url,
+    /// Timeout for the http requests sent to avoid potentially permanently hanging requests.
+    pub timeout: Duration,
     /// Strategy for function validation strategy. Whenever ChatGPT fails to call a function correctly, this strategy is applied.
     #[cfg(feature = "functions")]
     pub function_validation: FunctionValidationStrategy,
@@ -40,6 +43,7 @@ impl Default for ModelConfiguration {
             frequency_penalty: 0.0,
             reply_count: 1,
             api_url: url::Url::from_str("https://api.openai.com/v1/chat/completions").unwrap(),
+            timeout: Duration::from_secs(10),
             #[cfg(feature = "functions")]
             function_validation: FunctionValidationStrategy::default(),
         }
