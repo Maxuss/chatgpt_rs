@@ -139,14 +139,36 @@ pub mod test {
         let client = ChatGPT::new_with_config(
             std::env::var("TEST_API_KEY")?,
             ModelConfiguration {
-                max_tokens: 10,
+                max_tokens: Some(10),
                 ..Default::default()
             },
         )?;
         let response = client
             .send_message("Could you give me names of three popular Rust web frameworks?")
             .await?;
-        assert_eq!( response.message_choices.first().unwrap().finish_reason, "length".to_string());
+        assert_eq!(
+            response.message_choices.first().unwrap().finish_reason,
+            "length".to_string()
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_default_max_token_config() -> crate::Result<()> {
+        let client = ChatGPT::new_with_config(
+            std::env::var("TEST_API_KEY")?,
+            ModelConfiguration {
+                max_tokens: None,
+                ..Default::default()
+            },
+        )?;
+        let response = client
+            .send_message("Could you give me names of three popular Rust web frameworks?")
+            .await?;
+        assert_eq!(
+            response.message_choices.first().unwrap().finish_reason,
+            "stop".to_string()
+        );
         Ok(())
     }
 }

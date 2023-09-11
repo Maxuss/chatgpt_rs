@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::{fmt::Display, str::FromStr};
+use std::time::Duration;
 
 #[cfg(feature = "functions")]
 use crate::functions::FunctionValidationStrategy;
