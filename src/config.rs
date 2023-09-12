@@ -4,9 +4,10 @@ use std::time::Duration;
 #[cfg(feature = "functions")]
 use crate::functions::FunctionValidationStrategy;
 use derive_builder::Builder;
+use serde::Serialize;
 
 /// The struct containing main configuration for the ChatGPT API
-#[derive(Debug, Clone, PartialEq, PartialOrd, Builder)]
+#[derive(Serialize, Debug, Clone, PartialEq, PartialOrd, Builder)]
 #[builder(default, setter(into))]
 pub struct ModelConfiguration {
     /// The GPT version used.
@@ -16,7 +17,8 @@ pub struct ModelConfiguration {
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
     /// Controls the maximum number of tokens to generate in the completion
-    pub max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
     /// Determines how much to penalize new tokens passed on their existing presence so far
     pub presence_penalty: f32,
     /// Determines how much to penalize new tokens based on their existing frequency so far
@@ -38,7 +40,7 @@ impl Default for ModelConfiguration {
             engine: Default::default(),
             temperature: 0.5,
             top_p: 1.0,
-            max_tokens: 16,
+            max_tokens: Some(16),
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
@@ -51,7 +53,7 @@ impl Default for ModelConfiguration {
 }
 
 /// The engine version for ChatGPT
-#[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
 #[allow(non_camel_case_types)]
 pub enum ChatGPTEngine {
     /// Standard engine: `gpt-3.5-turbo`
