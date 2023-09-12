@@ -81,6 +81,7 @@ pub struct CompletionRequest<'a> {
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
     /// Controls the maximum number of tokens to generate in the completion
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
     /// Determines how much to penalize new tokens based on their existing frequency so far
     pub frequency_penalty: f32,
