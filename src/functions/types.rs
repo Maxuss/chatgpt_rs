@@ -73,7 +73,7 @@ pub enum FunctionCallingMode {
 }
 
 /// Determines how this client will validate function calls.
-#[derive(Debug, Copy, Clone, Default, PartialOrd, PartialEq)]
+#[derive(Serialize, Debug, Copy, Clone, Default, PartialOrd, PartialEq)]
 pub enum FunctionValidationStrategy {
     /// Whenever ChatGPT attempts to call an undefined function, or calls a functions with wrong parameters, sends a `System` message correcting it.
     Strict,

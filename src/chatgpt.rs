@@ -158,7 +158,6 @@ pub mod test {
         let client = ChatGPT::new_with_config(
             std::env::var("TEST_API_KEY")?,
             ModelConfiguration {
-                max_tokens: None,
                 ..Default::default()
             },
         )?;
@@ -167,7 +166,7 @@ pub mod test {
             .await?;
         assert_eq!(
             response.message_choices.first().unwrap().finish_reason,
-            "stop".to_string()
+            "length".to_string()
         );
         Ok(())
     }
