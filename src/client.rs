@@ -222,9 +222,6 @@ impl ChatGPT {
                 model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
-                    #[cfg(feature = "functions")]
-                    content: Some(message.into()),
-                    #[cfg(not(feature = "functions"))]
                     content: message.into(),
                     #[cfg(feature = "functions")]
                     function_call: None,
@@ -268,9 +265,6 @@ impl ChatGPT {
                 model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
-                    #[cfg(feature = "functions")]
-                    content: Some(message.into()),
-                    #[cfg(not(feature = "functions"))]
                     content: message.into(),
                     #[cfg(feature = "functions")]
                     function_call: None,
@@ -369,9 +363,6 @@ impl ChatGPT {
                 model: self.config.engine.as_ref(),
                 messages: &vec![ChatMessage {
                     role: Role::User,
-                    #[cfg(feature = "functions")]
-                    content: Some(message.into()),
-                    #[cfg(not(feature = "functions"))]
                     content: message.into(),
                     #[cfg(feature = "functions")]
                     function_call: None,

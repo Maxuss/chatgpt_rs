@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         .send_message("Describe in five words the Rust programming language.")
         .await?;
 
-    println!("Response: {}", response.message().content());
+    println!("Response: {}", response.message().content);
 
     Ok(())
 }

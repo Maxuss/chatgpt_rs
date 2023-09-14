@@ -42,9 +42,6 @@ impl Conversation {
             client,
             history: vec![ChatMessage {
                 role: Role::System,
-                #[cfg(feature = "functions")]
-                content: Some(first_message),
-                #[cfg(not(feature = "functions"))]
                 content: first_message,
                 #[cfg(feature = "functions")]
                 function_call: None,
@@ -104,9 +101,6 @@ impl Conversation {
     ) -> crate::Result<CompletionResponse> {
         self.history.push(ChatMessage {
             role,
-            #[cfg(feature = "functions")]
-            content: Some(message.into()),
-            #[cfg(not(feature = "functions"))]
             content: message.into(),
             #[cfg(feature = "functions")]
             function_call: None,
@@ -153,9 +147,6 @@ impl Conversation {
     ) -> crate::Result<CompletionResponse> {
         self.history.push(ChatMessage {
             role: Role::User,
-            #[cfg(feature = "functions")]
-            content: Some(message.into()),
-            #[cfg(not(feature = "functions"))]
             content: message.into(),
             #[cfg(feature = "functions")]
             function_call: None,
@@ -191,9 +182,6 @@ impl Conversation {
     ) -> crate::Result<impl Stream<Item = ResponseChunk>> {
         self.history.push(ChatMessage {
             role,
-            #[cfg(feature = "functions")]
-            content: Some(message.into()),
-            #[cfg(not(feature = "functions"))]
             content: message.into(),
             #[cfg(feature = "functions")]
             function_call: None,

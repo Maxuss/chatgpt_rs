@@ -1,6 +1,6 @@
 #[cfg(feature = "functions")]
 use crate::functions::FunctionCall;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 /// A role of a message sender, can be:
 /// - `System`, for starting system message, that sets the tone of model
@@ -24,17 +24,19 @@ pub enum Role {
 pub struct ChatMessage {
     /// Role of message sender
     pub role: Role,
-    /// Actual content of the message.
-    /// May be `None` if a function call was performed
-    #[cfg(feature = "functions")]
-    pub content: Option<String>,
     /// Actual content of the message
-    #[cfg(not(feature = "functions"))]
+    #[serde(deserialize_with = "deserialize_maybe_null")]
     pub content: String,
     /// Function call (if present)
     #[cfg(feature = "functions")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<FunctionCall>,
+}
+
+fn deserialize_maybe_null<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where D: Deserializer<'de> {
+    let buf = Option::<String>::deserialize(deserializer)?;
+    Ok(buf.unwrap_or(String::new()))
 }
 
 impl ChatMessage {
@@ -51,10 +53,7 @@ impl ChatMessage {
                     let msg = result
                         .get_mut(response_index)
                         .expect("Invalid response chunk sequence!");
-                    #[cfg(not(feature = "functions"))]
                     msg.content.push_str(&delta);
-                    #[cfg(feature = "functions")]
-                    msg.content.as_mut().unwrap().push_str(&delta); // functions dont support streaming anyways
                 }
                 ResponseChunk::BeginResponse {
                     role,
@@ -62,9 +61,6 @@ impl ChatMessage {
                 } => {
                     let msg = ChatMessage {
                         role,
-                        #[cfg(feature = "functions")]
-                        content: Some(String::new()),
-                        #[cfg(not(feature = "functions"))]
                         content: String::new(),
                         #[cfg(feature = "functions")]
                         function_call: None,
@@ -75,18 +71,6 @@ impl ChatMessage {
             }
         }
         result
-    }
-
-    /// Returns the content of this message.
-    ///
-    /// Useful when using the `functions` feature, as it changes content to be wrapped by an `Option`.
-    /// This *will* panic if there is no content inside the message (e.g. function call).
-    pub fn content(&self) -> &String {
-        #[cfg(not(feature = "functions"))]
-        let value = &self.content;
-        #[cfg(feature = "functions")]
-        let value = self.content.as_ref().unwrap();
-        value
     }
 }
 
