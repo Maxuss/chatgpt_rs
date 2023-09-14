@@ -104,7 +104,7 @@ pub mod test {
         let response = client
             .send_message("Could you give me names of three popular Rust web frameworks?")
             .await?;
-        assert!(response.message_choices.len() == 3);
+        assert_eq!(response.message_choices.len(), 3);
         Ok(())
     }
 
