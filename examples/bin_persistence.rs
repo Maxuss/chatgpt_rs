@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
         .send_message("And can you also do the same for Java?")
         .await?;
 
-    println!("Response for Java: {}", response.message().content);
+    println!("Response for Java: {}", response.message().content());
 
     Ok(())
 }

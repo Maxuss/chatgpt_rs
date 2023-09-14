@@ -24,9 +24,14 @@ pub enum Role {
 pub struct ChatMessage {
     /// Role of message sender
     pub role: Role,
+    /// Actual content of the message.
+    /// May be `None` if a function call was performed
+    #[cfg(feature = "functions")]
+    pub content: Option<String>,
     /// Actual content of the message
+    #[cfg(not(feature = "functions"))]
     pub content: String,
-    /// Possibly function call that was attempted by the API.
+    /// Function call (if present)
     #[cfg(feature = "functions")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<FunctionCall>,
@@ -46,7 +51,10 @@ impl ChatMessage {
                     let msg = result
                         .get_mut(response_index)
                         .expect("Invalid response chunk sequence!");
+                    #[cfg(not(feature = "functions"))]
                     msg.content.push_str(&delta);
+                    #[cfg(feature = "functions")]
+                    msg.content.as_mut().unwrap().push_str(&delta); // functions dont support streaming anyways
                 }
                 ResponseChunk::BeginResponse {
                     role,
@@ -54,6 +62,9 @@ impl ChatMessage {
                 } => {
                     let msg = ChatMessage {
                         role,
+                        #[cfg(feature = "functions")]
+                        content: Some(String::new()),
+                        #[cfg(not(feature = "functions"))]
                         content: String::new(),
                         #[cfg(feature = "functions")]
                         function_call: None,
@@ -64,6 +75,18 @@ impl ChatMessage {
             }
         }
         result
+    }
+
+    /// Returns the content of this message.
+    ///
+    /// Useful when using the `functions` feature, as it changes content to be wrapped by an `Option`.
+    /// This *will* panic if there is no content inside the message (e.g. function call).
+    pub fn content(&self) -> &String {
+        #[cfg(not(feature = "functions"))]
+        let value = &self.content;
+        #[cfg(feature = "functions")]
+        let value = self.content.as_ref().unwrap();
+        value
     }
 }
 

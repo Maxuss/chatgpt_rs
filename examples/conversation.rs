@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
     let response = conversation
         .send_message("Now could you do the same, but for Kotlin?")
         .await?;
-    println!("Response for Kotlin: {}", response.message().content);
+    println!("Response for Kotlin: {}", response.message().content());
 
     // The history is preserved and is sent to the API each call
     for message in &conversation.history {

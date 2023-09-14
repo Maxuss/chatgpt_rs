@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
         .send_message("Could you briefly tell me about the Zig programming language?")
         .await?;
 
-    println!("Response: {}", response.message().content);
+    println!("Response: {}", response.message().content());
 
     Ok(())
 }

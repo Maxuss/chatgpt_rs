@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         .send_message_functions("Could you please send a test message to user `maxus`?")
         .await?;
 
-    println!("Response: {}", response.message().content);
+    println!("Response: {}", response.message().content());
 
     Ok(())
 }
