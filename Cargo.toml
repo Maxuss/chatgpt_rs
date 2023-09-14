@@ -1,6 +1,6 @@
 [package]
 name = "chatgpt_rs"
-version = "1.2.2"
+version = "1.2.3"
 edition = "2021"
 description = "ChatGPT API Wrapper"
 authors = ["Maxuss <maxus.info.mail@proton.me>"]
@@ -16,29 +16,29 @@ path = "./src/chatgpt.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11.18", features = [
+reqwest = { version = "0.11.20", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-tokio = { version = "1.31.0", features = ["macros"] }
-serde = { version = "1.0.179", features = ["derive"] }
-serde_json = { version = "1.0.104", optional = true }
-thiserror = "1.0.44"
-url = { version = "2.4.0", features = ["serde"] }
+tokio = { version = "1.32.0", features = ["macros"] }
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = { version = "1.0.107", optional = true }
+thiserror = "1.0.48"
+url = { version = "2.4.1", features = ["serde"] }
 derive_builder = "0.12.0"
 
 
-postcard = { version = "1.0.6", features = ["alloc"], optional = true }
+postcard = { version = "1.0.7", features = ["alloc"], optional = true }
 eventsource-stream = { version = "0.2.3", optional = true }
 futures = { version = "0.3.28", optional = true }
 futures-util = { version = "0.3.28", optional = true }
 gpt_fn_macros = { path = "./fn_macros", version = "1.0.0", optional = true }
-schemars = { version = "0.8.12", optional = true }
-async-trait = { version = "0.1.72", optional = true }
-async-recursion = { version = "1.0.4", optional = true }
+schemars = { version = "0.8.13", optional = true }
+async-trait = { version = "0.1.73", optional = true }
+async-recursion = { version = "1.0.5", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.31.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
 chatgpt_rs = { path = ".", features = [
     "json",
     "streams",
