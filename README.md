@@ -8,6 +8,10 @@ It supports conversations, message persistence and ChatGPT functions.
 The function API (available in `v1.2.0+`) is currently experimental and *may* not work as intended. 
 If you encounter any issues or undefined behaviour, please, create an issue in this repository!
 
+## MSRV
+
+The Minimum Supported Rust Version for this library is 1.71.1
+
 ## Usage
 
 Here is a simple usage of the API, getting completion for a single message.
