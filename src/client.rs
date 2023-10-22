@@ -224,7 +224,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None,
+                    function_properties: None,
                 }],
                 stream: false,
                 temperature: self.config.temperature,
@@ -267,7 +267,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None,
+                    function_properties: None,
                 }],
                 stream: true,
                 temperature: self.config.temperature,
@@ -365,7 +365,7 @@ impl ChatGPT {
                     role: Role::User,
                     content: message.into(),
                     #[cfg(feature = "functions")]
-                    function_call: None,
+                    function_properties: None,
                 }],
                 stream: false,
                 temperature: self.config.temperature,

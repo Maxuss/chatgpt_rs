@@ -18,6 +18,7 @@ use crate::{
     client::ChatGPT,
     types::{ChatMessage, CompletionResponse, Role},
 };
+use crate::types::FunctionCallProperties;
 
 /// Stores a single conversation session, and automatically saves message history
 pub struct Conversation {
@@ -44,7 +45,7 @@ impl Conversation {
                 role: Role::System,
                 content: first_message,
                 #[cfg(feature = "functions")]
-                function_call: None,
+                function_properties: None,
             }],
             #[cfg(feature = "functions")]
             functions: HashMap::with_capacity(4),
@@ -103,7 +104,7 @@ impl Conversation {
             role,
             content: message.into(),
             #[cfg(feature = "functions")]
-            function_call: None,
+            function_properties: None,
         });
 
         #[cfg(feature = "functions")]
@@ -149,7 +150,7 @@ impl Conversation {
             role: Role::User,
             content: message.into(),
             #[cfg(feature = "functions")]
-            function_call: None,
+            function_properties: None,
         });
         let resp = self
             .client
@@ -184,7 +185,7 @@ impl Conversation {
             role,
             content: message.into(),
             #[cfg(feature = "functions")]
-            function_call: None,
+            function_properties: None,
         });
         let stream = self.client.send_history_streaming(&self.history).await?;
         Ok(stream)
@@ -244,8 +245,8 @@ impl Conversation {
         &mut self,
         message: &ChatMessage,
     ) -> Option<CompletionResponse> {
-        if let Some(call) = &message.function_call {
-            if let Some(Ok(result)) = self.process_function(call).await {
+        if let Some(FunctionCallProperties { function_call, .. }) = &message.function_properties {
+            if let Some(Ok(result)) = self.process_function(function_call).await {
                 Some(result)
             } else {
                 None
