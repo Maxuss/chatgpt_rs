@@ -19,6 +19,7 @@ You can see more practical examples in the `examples` directory.
 
 ```rust
 use chatgpt::prelude::*;
+use chatgpt::types::{CompletionResponse};
 
 #[tokio::main]
 async fn main() -> Result<()> {
