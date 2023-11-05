@@ -29,8 +29,19 @@ pub struct ChatMessage {
     pub content: String,
     /// Function call (if present)
     #[cfg(feature = "functions")]
+    #[serde(skip_serializing_if = "Option::is_none", flatten)]
+    pub function_properties: Option<FunctionCallProperties>,
+}
+
+/// Container for called function info
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct FunctionCallProperties {
+    /// The actual function call
+    pub function_call: FunctionCall,
+    /// Name of the function called
+    #[serde(rename = "name")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub function_call: Option<FunctionCall>,
+    pub function_name: Option<String>
 }
 
 fn deserialize_maybe_null<'de, D>(deserializer: D) -> Result<String, D::Error>
@@ -63,7 +74,7 @@ impl ChatMessage {
                         role,
                         content: String::new(),
                         #[cfg(feature = "functions")]
-                        function_call: None,
+                        function_properties: None,
                     };
                     result.push(msg);
                 }
