@@ -53,7 +53,7 @@ impl ChatGPT {
         );
         let client = reqwest::ClientBuilder::new()
             .default_headers(headers)
-            .timeout(config.timeout)
+            .connect_timeout(config.timeout)
             .build()?;
         Ok(Self { client, config })
     }
