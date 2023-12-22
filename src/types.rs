@@ -1,3 +1,4 @@
+use crate::config::ResponseFormat;
 #[cfg(feature = "functions")]
 use crate::functions::FunctionCall;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -85,6 +86,8 @@ pub struct CompletionRequest<'a> {
     pub stream: bool,
     /// The extra randomness of response
     pub temperature: f32,
+    /// Format of the response from the model, e.g., text or json_object.
+    pub response_format: ResponseFormat,
     /// Controls diversity via nucleus sampling, not recommended to use with temperature
     pub top_p: f32,
     /// Controls the maximum number of tokens to generate in the completion

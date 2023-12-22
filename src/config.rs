@@ -1,5 +1,5 @@
-use std::{fmt::Display, str::FromStr};
 use std::time::Duration;
+use std::{fmt::Display, str::FromStr};
 
 #[cfg(feature = "functions")]
 use crate::functions::FunctionValidationStrategy;
@@ -18,6 +18,8 @@ pub struct ModelConfiguration {
     pub top_p: f32,
     /// Controls the maximum number of tokens to generate in the completion
     pub max_tokens: Option<u32>,
+    /// Format of the response from the model, e.g., text or json_object.
+    pub response_format: ResponseFormat,
     /// Determines how much to penalize new tokens passed on their existing presence so far
     pub presence_penalty: f32,
     /// Determines how much to penalize new tokens based on their existing frequency so far
@@ -40,6 +42,7 @@ impl Default for ModelConfiguration {
             temperature: 0.5,
             top_p: 1.0,
             max_tokens: None,
+            response_format: ResponseFormat::default(),
             presence_penalty: 0.0,
             frequency_penalty: 0.0,
             reply_count: 1,
@@ -48,6 +51,38 @@ impl Default for ModelConfiguration {
             #[cfg(feature = "functions")]
             function_validation: FunctionValidationStrategy::default(),
         }
+    }
+}
+
+/// Specifies the format of the response.
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, PartialOrd, Builder)]
+#[builder(default, setter(into))]
+pub struct ResponseFormat {
+    /// The type of format for the response.
+    pub format_type: FormatType,
+}
+
+impl Default for ResponseFormat {
+    fn default() -> Self {
+        Self {
+            format_type: FormatType::default(),
+        }
+    }
+}
+
+/// Specifies the type of the format.
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[serde(rename_all = "snake_case")]
+pub enum FormatType {
+    /// Standard text format.
+    Text,
+    /// JSON object format.
+    JsonObject,
+}
+
+impl Default for FormatType {
+    fn default() -> Self {
+        FormatType::Text
     }
 }
 
