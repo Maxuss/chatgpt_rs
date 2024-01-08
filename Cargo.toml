@@ -28,7 +28,7 @@ url = { version = "2.4.1", features = ["serde"] }
 derive_builder = "0.12.0"
 
 
-postcard = { version = "1.0.7", features = ["alloc"], optional = true }
+postcard = { version = "1.0.8", features = ["alloc"], optional = true }
 eventsource-stream = { version = "0.2.3", optional = true }
 futures = { version = "0.3.28", optional = true }
 futures-util = { version = "0.3.28", optional = true }
